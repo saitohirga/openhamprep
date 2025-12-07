@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +25,7 @@ import {
   LogOut,
   AlertTriangle,
   Play,
-  BookOpen,
+  Bookmark,
   Lock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -32,9 +33,10 @@ import { cn } from '@/lib/utils';
 import { PracticeTest } from '@/components/PracticeTest';
 import { RandomPractice } from '@/components/RandomPractice';
 import { WeakQuestionsReview } from '@/components/WeakQuestionsReview';
+import { BookmarkedQuestions } from '@/components/BookmarkedQuestions';
 
 type TestType = 'technician' | 'general' | 'extra';
-type View = 'dashboard' | 'practice-test' | 'random-practice' | 'weak-questions';
+type View = 'dashboard' | 'practice-test' | 'random-practice' | 'weak-questions' | 'bookmarks';
 
 const testTypes = [
   { id: 'technician' as TestType, name: 'Technician', available: true },
@@ -44,9 +46,11 @@ const testTypes = [
 
 export default function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { bookmarks } = useBookmarks();
   const navigate = useNavigate();
   const [selectedTest, setSelectedTest] = useState<TestType>('technician');
   const [view, setView] = useState<View>('dashboard');
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -112,6 +116,10 @@ export default function Dashboard() {
 
   if (view === 'weak-questions') {
     return <WeakQuestionsReview weakQuestionIds={weakQuestionIds} onBack={() => setView('dashboard')} />;
+  }
+
+  if (view === 'bookmarks') {
+    return <BookmarkedQuestions onBack={() => setView('dashboard')} />;
   }
 
   if (authLoading || testsLoading || attemptsLoading) {
@@ -208,7 +216,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid md:grid-cols-3 gap-4 mb-8"
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
         >
           <button
             onClick={() => isTestAvailable && setView('practice-test')}
@@ -306,9 +314,31 @@ export default function Dashboard() {
                 : "No weak questions yet"}
             </p>
           </button>
-        </motion.div>
 
-        {/* Stats Grid */}
+          <button
+            onClick={() => setView('bookmarks')}
+            className="p-6 rounded-xl border-2 text-left transition-all bg-card border-primary/30 hover:border-primary hover:shadow-lg hover:shadow-primary/10 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-primary/10">
+                <Bookmark className="w-6 h-6 text-primary" />
+              </div>
+              {bookmarks && bookmarks.length > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
+                  {bookmarks.length}
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-mono font-bold mb-1 text-foreground group-hover:text-primary">
+              Bookmarked
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {bookmarks && bookmarks.length > 0
+                ? `Review ${bookmarks.length} saved question${bookmarks.length !== 1 ? 's' : ''}`
+                : "Save questions to review later"}
+            </p>
+          </button>
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
