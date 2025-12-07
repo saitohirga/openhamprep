@@ -84,13 +84,11 @@ export function QuestionCard({
       <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-xl">
         {/* Question Header */}
         <div className="flex items-center justify-between mb-4">
+          <span className="font-mono text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-md">
+            {question.id}
+          </span>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-md">
-              {question.id}
-            </span>
             <Calculator />
-          </div>
-          <div className="flex items-center gap-2">
             {questionNumber && totalQuestions && (
               <span className="font-mono text-sm text-primary">
                 {questionNumber} / {totalQuestions}
