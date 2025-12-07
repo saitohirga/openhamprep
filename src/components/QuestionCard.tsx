@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calculator } from "@/components/Calculator";
 
 interface QuestionCardProps {
   question: Question;
@@ -219,6 +220,11 @@ export function QuestionCard({
             )}
           </motion.div>
         )}
+
+        {/* Calculator */}
+        <div className="mt-6 flex justify-end">
+          <Calculator />
+        </div>
       </div>
     </motion.div>
   );
