@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { Question } from "@/hooks/useQuestions";
+import { useBookmarks } from "@/hooks/useBookmarks";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Bookmark, BookmarkCheck, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface QuestionCardProps {
   question: Question;
@@ -20,6 +31,30 @@ export function QuestionCard({
   totalQuestions,
 }: QuestionCardProps) {
   const options = ['A', 'B', 'C', 'D'] as const;
+  const { user } = useAuth();
+  const { isBookmarked, addBookmark, removeBookmark, getBookmarkNote, updateNote } = useBookmarks();
+  const [noteText, setNoteText] = useState('');
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
+
+  const bookmarked = isBookmarked(question.id);
+  const existingNote = getBookmarkNote(question.id);
+
+  const handleBookmarkClick = () => {
+    if (bookmarked) {
+      removeBookmark.mutate(question.id);
+    } else {
+      addBookmark.mutate({ questionId: question.id });
+    }
+  };
+
+  const handleSaveNote = () => {
+    if (!bookmarked) {
+      addBookmark.mutate({ questionId: question.id, note: noteText });
+    } else {
+      updateNote.mutate({ questionId: question.id, note: noteText });
+    }
+    setIsNoteOpen(false);
+  };
 
   const getOptionStyles = (option: typeof options[number]) => {
     if (!showResult) {
@@ -51,11 +86,77 @@ export function QuestionCard({
           <span className="font-mono text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-md">
             {question.id}
           </span>
-          {questionNumber && totalQuestions && (
-            <span className="font-mono text-sm text-primary">
-              {questionNumber} / {totalQuestions}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {questionNumber && totalQuestions && (
+              <span className="font-mono text-sm text-primary">
+                {questionNumber} / {totalQuestions}
+              </span>
+            )}
+            {user && (
+              <div className="flex items-center gap-1">
+                <Popover open={isNoteOpen} onOpenChange={(open) => {
+                  setIsNoteOpen(open);
+                  if (open) {
+                    setNoteText(existingNote || '');
+                  }
+                }}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn(
+                        "h-8 w-8",
+                        existingNote && "text-accent"
+                      )}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 bg-card border-border" align="end">
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-foreground">Add a note</p>
+                      <Textarea
+                        placeholder="Write your notes about this question..."
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        className="min-h-[100px] resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsNoteOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={handleSaveNote}
+                        >
+                          Save Note
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8",
+                    bookmarked && "text-primary"
+                  )}
+                  onClick={handleBookmarkClick}
+                >
+                  {bookmarked ? (
+                    <BookmarkCheck className="w-4 h-4" />
+                  ) : (
+                    <Bookmark className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Question Text */}
