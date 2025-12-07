@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator as CalculatorIcon, X } from "lucide-react";
+import { Calculator as CalculatorIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -126,61 +126,54 @@ export function Calculator({ className }: CalculatorProps) {
     }
   };
 
-  if (!isOpen) {
-    return (
+  return (
+    <div className={cn("relative", className)}>
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setIsOpen(true)}
-        className={cn("gap-2", className)}
+        onClick={() => setIsOpen(!isOpen)}
+        className="gap-2"
       >
         <CalculatorIcon className="w-4 h-4" />
-        Calculator
+        {isOpen ? "Close" : "Calculator"}
       </Button>
-    );
-  }
-
-  return (
-    <div className={cn("bg-card border border-border rounded-lg p-3 shadow-lg w-56", className)}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-muted-foreground">Calculator</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={() => setIsOpen(false)}
-        >
-          <X className="w-3 h-3" />
-        </Button>
-      </div>
       
-      <div className="bg-secondary rounded-md p-3 mb-2 text-right">
-        <span className="font-mono text-xl text-foreground">
-          {display.length > 12 ? parseFloat(display).toExponential(6) : display}
-        </span>
-      </div>
+      {isOpen && (
+        <div className="absolute right-0 top-0 translate-x-[calc(100%+0.5rem)] bg-card border border-border rounded-lg p-3 shadow-lg w-56 z-50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Calculator</span>
+          </div>
+          
+          <div className="bg-secondary rounded-md p-3 mb-2 text-right">
+            <span className="font-mono text-xl text-foreground">
+              {display.length > 12 ? parseFloat(display).toExponential(6) : display}
+            </span>
+          </div>
 
-      <div className="grid gap-1">
-        {buttons.map((row, rowIndex) => (
-          <div key={rowIndex} className="grid grid-cols-4 gap-1">
-            {row.map((btn) => (
-              <Button
-                key={btn}
-                variant={btn === "C" ? "destructive" : ["+", "-", "×", "÷", "="].includes(btn) ? "secondary" : "outline"}
-                size="sm"
-                className={cn(
-                  "h-9 font-mono text-sm",
-                  btn === "0" && "col-span-2",
-                  btn === "C" && "col-span-3"
-                )}
-                onClick={() => handleButtonClick(btn)}
-              >
-                {btn}
-              </Button>
+          <div className="grid gap-1">
+            {buttons.map((row, rowIndex) => (
+              <div key={rowIndex} className="grid grid-cols-4 gap-1">
+                {row.map((btn) => (
+                  <Button
+                    key={btn}
+                    variant={btn === "C" ? "destructive" : ["+", "-", "×", "÷", "="].includes(btn) ? "secondary" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "h-9 font-mono text-sm",
+                      btn === "0" && "col-span-2",
+                      btn === "C" && "col-span-3"
+                    )}
+                    onClick={() => handleButtonClick(btn)}
+                  >
+                    {btn}
+                  </Button>
+                ))}
+              </div>
             ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
+
 }
