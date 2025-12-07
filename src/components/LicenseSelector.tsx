@@ -94,7 +94,7 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
             Your path to becoming a licensed Amateur Radio operator
           </p>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Prepare for your Technician, General, or Amateur Extra license exam with our comprehensive study tools. 
+            Prepare for your Technician, General, or Amateur Extra license exam with our comprehensive study tools.
             Built by the{" "}
             <a
               href="https://www.rars.org/"
@@ -103,7 +103,8 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
               className="text-primary hover:underline font-medium"
             >
               Raleigh Amateur Radio Society
-            </a>.
+            </a>
+            .
           </p>
 
           {/* CTA Button */}
@@ -114,7 +115,7 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
           >
             <Link to="/auth">
               <Button size="lg" className="text-lg px-8 py-6 group">
-                Start Studying Free
+                Start Studying For Free
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
@@ -187,16 +188,26 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-mono font-bold text-foreground mb-4">
-              How It Works
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-mono font-bold text-foreground mb-4">How It Works</h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: "1", title: "Create Account", description: "Sign up for free in seconds. No credit card required." },
-              { step: "2", title: "Study & Practice", description: "Take practice tests and drill through questions at your own pace." },
-              { step: "3", title: "Pass Your Exam", description: "Show up confident and earn your amateur radio license!" },
+              {
+                step: "1",
+                title: "Create Account",
+                description: "Sign up for free in seconds. No credit card required.",
+              },
+              {
+                step: "2",
+                title: "Study & Practice",
+                description: "Take practice tests and drill through questions at your own pace.",
+              },
+              {
+                step: "3",
+                title: "Pass Your Exam",
+                description: "Show up confident and earn your amateur radio license!",
+              },
             ].map((item, index) => (
               <motion.div
                 key={item.step}
@@ -226,12 +237,10 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
         >
           <div className="bg-card border-2 border-primary/20 rounded-2xl p-8 md:p-12">
             <Radio className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl md:text-3xl font-mono font-bold text-foreground mb-4">
-              Ready to Get Licensed?
-            </h2>
+            <h2 className="text-2xl md:text-3xl font-mono font-bold text-foreground mb-4">Ready to Get Licensed?</h2>
             <p className="text-muted-foreground mb-6">
-              Join hundreds of aspiring hams who have used RARS Test Prep to pass their exams. 
-              Your amateur radio journey starts here.
+              Join hundreds of aspiring hams who have used RARS Test Prep to pass their exams. Your amateur radio
+              journey starts here.
             </p>
             <Link to="/auth">
               <Button size="lg" className="text-lg px-8 py-6 group">
@@ -246,9 +255,7 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border mt-auto">
         <div className="max-w-6xl mx-auto text-center text-muted-foreground space-y-3">
-          <p className="text-sm">
-            Official FCC question pools • Free to use
-          </p>
+          <p className="text-sm">Official FCC question pools • Free to use</p>
           <p className="text-sm">
             A test prep app for the{" "}
             <a
@@ -260,9 +267,7 @@ export function LicenseSelector({ onSelectLicense }: LicenseSelectorProps) {
               Raleigh Amateur Radio Society (RARS)
             </a>
           </p>
-          <p className="text-xs mt-4">
-            © {new Date().getFullYear()} Brad Bazemore. All rights reserved.
-          </p>
+          <p className="text-xs mt-4">© {new Date().getFullYear()} Brad Bazemore. All rights reserved.</p>
         </div>
       </footer>
     </div>
