@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Trophy, 
   Target, 
@@ -21,7 +31,8 @@ import {
   XCircle,
   Loader2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -33,7 +44,6 @@ import { SubelementPractice } from '@/components/SubelementPractice';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TestResultReview } from '@/components/TestResultReview';
 import { AppLayout } from '@/components/AppLayout';
-import { useState } from 'react';
 
 type TestType = 'technician' | 'general' | 'extra';
 
@@ -49,6 +59,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { currentView, setCurrentView, reviewingTestId, setReviewingTestId } = useAppNavigation();
   const [selectedTest, setSelectedTest] = useState<TestType>('technician');
+  const [testInProgress, setTestInProgress] = useState(false);
+  const [pendingView, setPendingView] = useState<typeof currentView | null>(null);
+  const [showNavigationWarning, setShowNavigationWarning] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -103,10 +116,34 @@ export default function Dashboard() {
   const currentTest = testTypes.find(t => t.id === selectedTest);
   const isTestAvailable = currentTest?.available ?? false;
 
+  // Handle view changes with test-in-progress check
+  const handleViewChange = (view: typeof currentView) => {
+    if (testInProgress && view !== 'practice-test') {
+      setPendingView(view);
+      setShowNavigationWarning(true);
+    } else {
+      setCurrentView(view);
+    }
+  };
+
+  const handleConfirmNavigation = () => {
+    if (pendingView) {
+      setTestInProgress(false);
+      setCurrentView(pendingView);
+      setPendingView(null);
+    }
+    setShowNavigationWarning(false);
+  };
+
+  const handleCancelNavigation = () => {
+    setPendingView(null);
+    setShowNavigationWarning(false);
+  };
+
   // Render content based on view
   const renderContent = () => {
     if (currentView === 'practice-test') {
-      return <PracticeTest onBack={() => setCurrentView('dashboard')} />;
+      return <PracticeTest onBack={() => setCurrentView('dashboard')} onTestStateChange={setTestInProgress} />;
     }
 
     if (currentView === 'random-practice') {
@@ -430,8 +467,33 @@ export default function Dashboard() {
   };
 
   return (
-    <AppLayout currentView={currentView} onViewChange={setCurrentView}>
-      {renderContent()}
-    </AppLayout>
+    <>
+      {/* Navigation Warning Dialog */}
+      <AlertDialog open={showNavigationWarning} onOpenChange={setShowNavigationWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Test in Progress
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have a practice test in progress. If you leave now, your progress will not be saved. Are you sure you want to end the test?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelNavigation}>
+              Return to Test
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmNavigation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              End Test
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AppLayout currentView={currentView} onViewChange={handleViewChange}>
+        {renderContent()}
+      </AppLayout>
+    </>
   );
 }

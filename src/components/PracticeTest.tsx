@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/QuestionCard";
 import { TestResults } from "@/components/TestResults";
 import { useQuestions, Question } from "@/hooks/useQuestions";
 import { useProgress } from "@/hooks/useProgress";
-import { ArrowLeft, ArrowRight, CheckCircle, Radio, Loader2, Clock, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle, Radio, Loader2, Clock, Info, Play, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -15,9 +15,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PracticeTestProps {
   onBack: () => void;
+  onTestStateChange?: (inProgress: boolean) => void;
 }
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -39,13 +50,11 @@ function formatTime(seconds: number): string {
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function PracticeTest({ onBack }: PracticeTestProps) {
+export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
   const { data: allQuestions, isLoading, error } = useQuestions();
   const { saveTestResult } = useProgress();
-  const questions = useMemo(() => {
-    if (!allQuestions) return [];
-    return shuffleArray([...allQuestions]).slice(0, 35);
-  }, [allQuestions]);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
@@ -59,9 +68,14 @@ export function PracticeTest({ onBack }: PracticeTestProps) {
   const answeredCount = Object.keys(answers).length;
   const progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
 
+  // Notify parent of test state changes
+  useEffect(() => {
+    onTestStateChange?.(hasStarted && !isFinished);
+  }, [hasStarted, isFinished, onTestStateChange]);
+
   // Timer effect
   useEffect(() => {
-    if (!timerEnabled || isFinished) return;
+    if (!timerEnabled || isFinished || !hasStarted) return;
     
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -75,11 +89,11 @@ export function PracticeTest({ onBack }: PracticeTestProps) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerEnabled, isFinished]);
+  }, [timerEnabled, isFinished, hasStarted]);
 
   // Auto-submit when time runs out
   useEffect(() => {
-    if (timerEnabled && timeRemaining === 0 && !isFinished) {
+    if (timerEnabled && timeRemaining === 0 && !isFinished && hasStarted) {
       setIsFinished(true);
       saveTestResult(questions, answers).then((result) => {
         if (result) {
@@ -87,7 +101,14 @@ export function PracticeTest({ onBack }: PracticeTestProps) {
         }
       });
     }
-  }, [timeRemaining, timerEnabled, isFinished, questions, answers, saveTestResult]);
+  }, [timeRemaining, timerEnabled, isFinished, hasStarted, questions, answers, saveTestResult]);
+
+  const handleStartTest = () => {
+    if (!allQuestions) return;
+    const shuffledQuestions = shuffleArray([...allQuestions]).slice(0, 35);
+    setQuestions(shuffledQuestions);
+    setHasStarted(true);
+  };
 
   if (isLoading) {
     return (
@@ -100,11 +121,98 @@ export function PracticeTest({ onBack }: PracticeTestProps) {
     );
   }
 
-  if (error || questions.length === 0 || !currentQuestion) {
+  if (error || !allQuestions || allQuestions.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">Failed to load questions</p>
+          <Button onClick={onBack}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Start Screen
+  if (!hasStarted) {
+    return (
+      <div className="min-h-screen bg-background py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-2 text-foreground">
+              <Radio className="w-5 h-5" />
+              <span className="font-mono font-semibold">Practice Test</span>
+            </div>
+          </div>
+
+          {/* Start Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card border border-border rounded-xl p-8 text-center"
+          >
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Play className="w-8 h-8 text-primary" />
+            </div>
+            
+            <h1 className="text-2xl font-mono font-bold text-foreground mb-4">
+              Ready to Begin?
+            </h1>
+            
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              This practice test simulates the real Amateur Radio exam with 35 randomly selected questions.
+            </p>
+
+            {/* Warning Box */}
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-8">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-destructive mb-1">
+                    Important: Progress will not be saved
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    If you navigate away or exit the test before completing it, your progress will be lost. This simulates real exam conditions.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Test Info */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="text-center">
+                <p className="text-2xl font-mono font-bold text-foreground">35</p>
+                <p className="text-xs text-muted-foreground">Questions</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-mono font-bold text-foreground">74%</p>
+                <p className="text-xs text-muted-foreground">To Pass</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-mono font-bold text-foreground">26</p>
+                <p className="text-xs text-muted-foreground">Correct Needed</p>
+              </div>
+            </div>
+
+            <Button size="lg" onClick={handleStartTest} className="gap-2">
+              <Play className="w-5 h-5" />
+              Start Test
+            </Button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">No questions available</p>
           <Button onClick={onBack}>Go Back</Button>
         </div>
       </div>
@@ -146,6 +254,7 @@ export function PracticeTest({ onBack }: PracticeTestProps) {
     setAnswers({});
     setCurrentIndex(0);
     setIsFinished(false);
+    setHasStarted(false);
     setTimeRemaining(120 * 60);
   };
 
