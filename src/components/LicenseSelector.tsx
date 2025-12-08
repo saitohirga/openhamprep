@@ -53,8 +53,10 @@ export function LicenseSelector({
         <ThemeToggle />
       </div>
 
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center px-4 pt-16 pb-12 md:pt-24 md:pb-16">
+      {/* Main Content */}
+      <main>
+        {/* Hero Section */}
+        <section className="flex flex-col items-center justify-center px-4 pt-16 pb-12 md:pt-24 md:pb-16">
         <motion.div initial={{
         opacity: 0,
         y: -30
@@ -239,8 +241,9 @@ export function LicenseSelector({
               </Button>
             </Link>
           </div>
-        </motion.div>
+      </motion.div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border mt-auto">
