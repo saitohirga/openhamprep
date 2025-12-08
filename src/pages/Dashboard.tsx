@@ -6,7 +6,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trophy, Target, Zap, TrendingUp, CheckCircle, XCircle, Loader2, ArrowRight, AlertTriangle, Flame, BookText, Brain, Settings, CalendarDays } from 'lucide-react';
+import { Trophy, Target, Zap, TrendingUp, CheckCircle, XCircle, Loader2, ArrowRight, AlertTriangle, Flame, Brain, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -85,53 +85,6 @@ export default function Dashboard() {
         data,
         error
       } = await supabase.from('profiles').select('best_streak').eq('id', user!.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
-
-  // Fetch glossary terms count
-  const {
-    data: glossaryTerms = []
-  } = useQuery({
-    queryKey: ['glossary-terms-count'],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('glossary_terms').select('id');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Fetch glossary progress
-  const {
-    data: glossaryProgress = []
-  } = useQuery({
-    queryKey: ['glossary-progress', user?.id],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('glossary_progress').select('*').eq('user_id', user!.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
-
-  // Fetch glossary streak from profile
-  const {
-    data: glossaryStreak
-  } = useQuery({
-    queryKey: ['profile-glossary-streak', user?.id],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('profiles').select('glossary_current_streak, glossary_best_streak, glossary_last_study_date').eq('id', user!.id).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -361,10 +314,6 @@ export default function Dashboard() {
     const nextAction = getNextAction();
     const NextActionIcon = nextAction.icon;
 
-    // Calculate glossary stats for the compact display
-    const totalTerms = glossaryTerms.length;
-    const masteredTerms = glossaryProgress.filter(p => p.mastered).length;
-    const glossaryPercentage = totalTerms > 0 ? Math.round(masteredTerms / totalTerms * 100) : 0;
 
     // Get motivational message based on time of day and progress
     const getMotivationalMessage = () => {
@@ -416,7 +365,7 @@ export default function Dashboard() {
           {/* Motivational Greeting */}
           
 
-          {/* Test Readiness - Most Important */}
+          {/* Test Readiness with Next Action */}
           <motion.div initial={{
           opacity: 0,
           y: -10
@@ -436,7 +385,7 @@ export default function Dashboard() {
               </div>
               {readinessLevel === 'ready' && <CheckCircle className="w-8 h-8 text-success shrink-0" />}
             </div>
-            <div className="h-3 bg-secondary rounded-full overflow-hidden">
+            <div className="h-3 bg-secondary rounded-full overflow-hidden mb-2">
               <motion.div initial={{
               width: 0
             }} animate={{
@@ -446,9 +395,28 @@ export default function Dashboard() {
               delay: 0.2
             }} className={cn("h-full rounded-full", readinessLevel === 'ready' ? 'bg-success' : readinessLevel === 'getting-close' ? 'bg-primary' : readinessLevel === 'needs-work' ? 'bg-orange-500' : 'bg-muted-foreground/30')} />
             </div>
-            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
               <span>Need 74% to pass</span>
               <span>{passedTests}/{totalTests} tests passed</span>
+            </div>
+            
+            {/* Integrated Next Action */}
+            <div className="pt-3 border-t border-current/10">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", nextAction.priority === 'ready' ? 'bg-success/20' : nextAction.priority === 'weak' ? 'bg-orange-500/20' : 'bg-primary/20')}>
+                    <NextActionIcon className={cn("w-4 h-4", nextAction.priority === 'ready' ? 'text-success' : nextAction.priority === 'weak' ? 'text-orange-500' : 'text-primary')} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{nextAction.title}</p>
+                    <p className="text-xs text-muted-foreground hidden sm:block truncate">{nextAction.description}</p>
+                  </div>
+                </div>
+                <Button onClick={nextAction.action} className={cn("shrink-0 gap-2", nextAction.priority === 'ready' && "bg-success hover:bg-success/90", nextAction.priority === 'weak' && "bg-orange-500 hover:bg-orange-600")}>
+                  {nextAction.actionLabel}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </motion.div>
 
@@ -501,30 +469,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Next Action - Compact */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.08
-        }} className="flex items-center justify-between gap-4 bg-card border border-border rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", nextAction.priority === 'ready' ? 'bg-success/20' : nextAction.priority === 'weak' ? 'bg-orange-500/20' : 'bg-primary/20')}>
-                <NextActionIcon className={cn("w-5 h-5", nextAction.priority === 'ready' ? 'text-success' : nextAction.priority === 'weak' ? 'text-orange-500' : 'text-primary')} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{nextAction.title}</p>
-                <p className="text-xs text-muted-foreground hidden sm:block">{nextAction.description}</p>
-              </div>
-            </div>
-            <Button onClick={nextAction.action} className={cn("shrink-0 gap-2", nextAction.priority === 'ready' && "bg-success hover:bg-success/90", nextAction.priority === 'weak' && "bg-orange-500 hover:bg-orange-600")}>
-              {nextAction.actionLabel}
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </motion.div>
 
           {/* Key Metrics - Compact Row */}
           <motion.div initial={{
@@ -621,41 +565,6 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* Glossary Progress - Compact */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.25
-        }} className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <BookText className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-mono font-bold text-foreground">Glossary</h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
-                  {masteredTerms}/{totalTerms} terms
-                </span>
-                {(glossaryStreak?.glossary_current_streak || 0) > 0 && <span className="flex items-center gap-1 text-orange-500 text-sm font-bold">
-                    {glossaryStreak?.glossary_current_streak}
-                    <Flame className="w-4 h-4" />
-                  </span>}
-                <Button size="sm" variant="outline" onClick={() => setCurrentView('glossary-flashcards')} className="gap-1">
-                  <Brain className="w-3 h-3" />
-                  Study
-                </Button>
-              </div>
-            </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-primary to-success transition-all duration-500" style={{
-              width: `${glossaryPercentage}%`
-            }} />
-            </div>
-          </motion.div>
 
         </div>
       </div>;
