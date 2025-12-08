@@ -10,27 +10,12 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface PracticeTestProps {
   onBack: () => void;
   onTestStateChange?: (inProgress: boolean) => void;
 }
-
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -39,34 +24,40 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return shuffled;
 }
-
 function formatTime(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+  const minutes = Math.floor(seconds % 3600 / 60);
   const secs = seconds % 60;
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
-
-export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
-  const { data: allQuestions, isLoading, error } = useQuestions();
-  const { saveTestResult } = useProgress();
+export function PracticeTest({
+  onBack,
+  onTestStateChange
+}: PracticeTestProps) {
+  const {
+    data: allQuestions,
+    isLoading,
+    error
+  } = useQuestions();
+  const {
+    saveTestResult
+  } = useProgress();
   const [hasStarted, setHasStarted] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
-  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
   const [isFinished, setIsFinished] = useState(false);
-  
+
   // Timer state
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(120 * 60); // 120 minutes in seconds
 
   const currentQuestion = questions.length > 0 ? questions[currentIndex] : null;
   const answeredCount = Object.keys(answers).length;
-  const progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+  const progress = questions.length > 0 ? answeredCount / questions.length * 100 : 0;
 
   // Notify parent of test state changes
   useEffect(() => {
@@ -76,9 +67,8 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
   // Timer effect
   useEffect(() => {
     if (!timerEnabled || isFinished || !hasStarted) return;
-    
     const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
+      setTimeRemaining(prev => {
         if (prev <= 1) {
           clearInterval(interval);
           toast.warning("Time's up! Submitting your test.");
@@ -87,7 +77,6 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
   }, [timerEnabled, isFinished, hasStarted]);
 
@@ -95,54 +84,43 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
   useEffect(() => {
     if (timerEnabled && timeRemaining === 0 && !isFinished && hasStarted) {
       setIsFinished(true);
-      saveTestResult(questions, answers).then((result) => {
+      saveTestResult(questions, answers).then(result => {
         if (result) {
           toast.success('Test results saved!');
         }
       });
     }
   }, [timeRemaining, timerEnabled, isFinished, hasStarted, questions, answers, saveTestResult]);
-
   const handleStartTest = () => {
     if (!allQuestions) return;
     const shuffledQuestions = shuffleArray([...allQuestions]).slice(0, 35);
     setQuestions(shuffledQuestions);
     setHasStarted(true);
   };
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading questions...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (error || !allQuestions || allQuestions.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">Failed to load questions</p>
           <Button onClick={onBack}>Go Back</Button>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Start Screen
   if (!hasStarted) {
-    return (
-      <div className="min-h-screen bg-background py-8 px-4">
+    return <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted hover:text-foreground">
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
+            
             <div className="flex items-center gap-2 text-foreground">
               <Radio className="w-5 h-5" />
               <span className="font-mono font-semibold">Practice Test</span>
@@ -150,11 +128,13 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
           </div>
 
           {/* Start Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border rounded-xl p-8 text-center"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} className="bg-card border border-border rounded-xl p-8 text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Play className="w-8 h-8 text-primary" />
             </div>
@@ -204,40 +184,32 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
             </Button>
           </motion.div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!currentQuestion) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">No questions available</p>
           <Button onClick={onBack}>Go Back</Button>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   const handleSelectAnswer = (answer: 'A' | 'B' | 'C' | 'D') => {
-    setAnswers((prev) => ({
+    setAnswers(prev => ({
       ...prev,
-      [currentQuestion.id]: answer,
+      [currentQuestion.id]: answer
     }));
   };
-
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
-
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
-
   const handleFinishInternal = async () => {
     setIsFinished(true);
     const result = await saveTestResult(questions, answers);
@@ -245,11 +217,9 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
       toast.success('Test results saved!');
     }
   };
-
   const handleFinish = () => {
     handleFinishInternal();
   };
-
   const handleRetake = () => {
     setAnswers({});
     setCurrentIndex(0);
@@ -257,27 +227,16 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
     setHasStarted(false);
     setTimeRemaining(120 * 60);
   };
-
   const handleTimerToggle = (enabled: boolean) => {
     setTimerEnabled(enabled);
     if (enabled) {
       setTimeRemaining(120 * 60);
     }
   };
-
   if (isFinished) {
-    return (
-      <TestResults
-        questions={questions}
-        answers={answers}
-        onRetake={handleRetake}
-        onBack={onBack}
-      />
-    );
+    return <TestResults questions={questions} answers={answers} onRetake={handleRetake} onBack={onBack} />;
   }
-
-  return (
-    <div className="min-h-screen bg-background py-8 px-4">
+  return <div className="min-h-screen bg-background py-8 px-4">
       {/* Header */}
       <div className="max-w-3xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -296,11 +255,7 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <Switch
-                  id="timer-toggle"
-                  checked={timerEnabled}
-                  onCheckedChange={handleTimerToggle}
-                />
+                <Switch id="timer-toggle" checked={timerEnabled} onCheckedChange={handleTimerToggle} />
                 <Label htmlFor="timer-toggle" className="text-sm font-medium cursor-pointer">
                   Exam Timer
                 </Label>
@@ -316,14 +271,12 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
                 </TooltipContent>
               </Tooltip>
             </div>
-            {timerEnabled && (
-              <div className="flex items-center gap-2">
+            {timerEnabled && <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <span className={`font-mono text-lg ${timeRemaining < 300 ? 'text-destructive' : 'text-foreground'}`}>
                   {formatTime(timeRemaining)}
                 </span>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
 
@@ -340,76 +293,41 @@ export function PracticeTest({ onBack, onTestStateChange }: PracticeTestProps) {
       </div>
 
       {/* Question */}
-      <QuestionCard
-        question={currentQuestion}
-        selectedAnswer={answers[currentQuestion.id] || null}
-        onSelectAnswer={handleSelectAnswer}
-        showResult={false}
-        questionNumber={currentIndex + 1}
-        totalQuestions={questions.length}
-      />
+      <QuestionCard question={currentQuestion} selectedAnswer={answers[currentQuestion.id] || null} onSelectAnswer={handleSelectAnswer} showResult={false} questionNumber={currentIndex + 1} totalQuestions={questions.length} />
 
       {/* Navigation */}
       <div className="max-w-3xl mx-auto mt-8">
         <div className="flex items-center justify-between gap-4">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-            className="gap-2"
-          >
+          <Button variant="outline" onClick={handlePrevious} disabled={currentIndex === 0} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Previous
           </Button>
 
           {/* Question Navigator */}
           <div className="hidden md:flex flex-wrap justify-center gap-1 max-w-md">
-            {questions.map((q, idx) => (
-              <button
-                key={q.id}
-                onClick={() => setCurrentIndex(idx)}
-                className={`w-8 h-8 rounded text-xs font-mono transition-colors ${
-                  idx === currentIndex
-                    ? "bg-primary text-primary-foreground"
-                    : answers[q.id]
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-secondary"
-                }`}
-              >
+            {questions.map((q, idx) => <button key={q.id} onClick={() => setCurrentIndex(idx)} className={`w-8 h-8 rounded text-xs font-mono transition-colors ${idx === currentIndex ? "bg-primary text-primary-foreground" : answers[q.id] ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground hover:bg-secondary"}`}>
                 {idx + 1}
-              </button>
-            ))}
+              </button>)}
           </div>
 
-          {currentIndex === questions.length - 1 ? (
-            <Button
-              onClick={handleFinish}
-              className="gap-2"
-              variant={answeredCount === questions.length ? "default" : "secondary"}
-            >
+          {currentIndex === questions.length - 1 ? <Button onClick={handleFinish} className="gap-2" variant={answeredCount === questions.length ? "default" : "secondary"}>
               <CheckCircle className="w-4 h-4" />
               Finish Test
-            </Button>
-          ) : (
-            <Button onClick={handleNext} className="gap-2">
+            </Button> : <Button onClick={handleNext} className="gap-2">
               Next
               <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
+            </Button>}
         </div>
 
         {/* Unanswered Warning */}
-        {currentIndex === questions.length - 1 && answeredCount < questions.length && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-muted-foreground text-sm mt-4"
-          >
+        {currentIndex === questions.length - 1 && answeredCount < questions.length && <motion.p initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} className="text-center text-muted-foreground text-sm mt-4">
             You have {questions.length - answeredCount} unanswered question(s).
             You can still submit, but unanswered questions will be marked incorrect.
-          </motion.p>
-        )}
+          </motion.p>}
       </div>
-    </div>
-  );
+    </div>;
 }
