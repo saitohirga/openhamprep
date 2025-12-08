@@ -235,19 +235,36 @@ export function QuestionCard({
           </motion.div>
         )}
 
-        {/* Link Previews - shown after answering (not during active practice test) */}
-        {showResult && !hideLinks && question.links && question.links.length > 0 && (
+        {/* Explanation and Links - shown after answering */}
+        {showResult && !hideLinks && (question.explanation || (question.links && question.links.length > 0)) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-6 space-y-3"
+            className="mt-6"
           >
-            <h3 className="text-sm font-medium text-muted-foreground">Learn more:</h3>
-            <div className="space-y-3">
-              {question.links.map((link, index) => (
-                <LinkPreview key={index} link={link} />
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Explanation - Left side */}
+              {question.explanation && (
+                <div className="p-4 rounded-lg bg-secondary/50 border border-border">
+                  <h3 className="text-sm font-medium text-foreground mb-2">Explanation</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {question.explanation}
+                  </p>
+                </div>
+              )}
+              
+              {/* Links - Right side */}
+              {question.links && question.links.length > 0 && (
+                <div className={cn(!question.explanation && "md:col-span-2")}>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Learn more:</h3>
+                  <div className="space-y-3">
+                    {question.links.map((link, index) => (
+                      <LinkPreview key={index} link={link} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
