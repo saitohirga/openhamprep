@@ -7,33 +7,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileModal } from "@/components/ProfileModal";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useNavigate } from "react-router-dom";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
-
 export type TestType = 'technician' | 'general' | 'extra';
-
-export const testTypes = [
-  { id: 'technician' as TestType, name: 'Technician', available: true },
-  { id: 'general' as TestType, name: 'General', available: false },
-  { id: 'extra' as TestType, name: 'Amateur Extra', available: false },
-];
-
+export const testTypes = [{
+  id: 'technician' as TestType,
+  name: 'Technician',
+  available: true
+}, {
+  id: 'general' as TestType,
+  name: 'General',
+  available: false
+}, {
+  id: 'extra' as TestType,
+  name: 'Amateur Extra',
+  available: false
+}];
 type View = 'dashboard' | 'practice-test' | 'random-practice' | 'weak-questions' | 'bookmarks' | 'subelement-practice' | 'review-test' | 'glossary' | 'glossary-flashcards';
 interface NavItem {
   id: View;
@@ -79,7 +69,9 @@ export function DashboardSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
-  const { isAdmin } = useAdmin();
+  const {
+    isAdmin
+  } = useAdmin();
   const navigate = useNavigate();
   const getInitials = () => {
     if (userInfo?.displayName) {
@@ -132,7 +124,6 @@ export function DashboardSidebar({
     }
   };
   const currentTest = testTypes.find(t => t.id === selectedTest);
-
   const NavContent = ({
     isMobile = false
   }: {
@@ -153,44 +144,30 @@ export function DashboardSidebar({
 
       {/* Test Type Selector */}
       <div className={cn("border-b border-border", !isMobile && isCollapsed ? "p-2" : "p-3")}>
-        {(isMobile || !isCollapsed) ? (
-          <div>
+        {isMobile || !isCollapsed ? <div>
             <label className="text-xs text-muted-foreground font-medium mb-1.5 block">License Class</label>
-            <Select value={selectedTest} onValueChange={(v) => {
-              const test = testTypes.find(t => t.id === v);
-              if (test?.available) {
-                onTestChange(v as TestType);
-              }
-            }}>
+            <Select value={selectedTest} onValueChange={v => {
+          const test = testTypes.find(t => t.id === v);
+          if (test?.available) {
+            onTestChange(v as TestType);
+          }
+        }}>
               <SelectTrigger className="w-full bg-secondary/50 border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-card border-border z-50">
-                {testTypes.map((test) => (
-                  <SelectItem 
-                    key={test.id} 
-                    value={test.id}
-                    disabled={!test.available}
-                    className={cn(!test.available && "opacity-50 cursor-not-allowed")}
-                  >
+                {testTypes.map(test => <SelectItem key={test.id} value={test.id} disabled={!test.available} className={cn(!test.available && "opacity-50 cursor-not-allowed")}>
                     <span className="flex items-center gap-2">
                       {test.name}
-                      {!test.available && (
-                        <span className="text-[10px] text-muted-foreground ml-1">(Coming Soon)</span>
-                      )}
+                      {!test.available && <span className="text-[10px] text-muted-foreground ml-1">(Coming Soon)</span>}
                     </span>
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
-            {!currentTest?.available && (
-              <span className="text-[10px] text-muted-foreground mt-1 block">
+            {!currentTest?.available && <span className="text-[10px] text-muted-foreground mt-1 block">
                 Coming Soon
-              </span>
-            )}
-          </div>
-        ) : (
-          <Tooltip delayDuration={0}>
+              </span>}
+          </div> : <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button className="w-full flex items-center justify-center p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors">
                 <span className="text-xs font-bold text-primary">{selectedTest[0].toUpperCase()}</span>
@@ -198,12 +175,9 @@ export function DashboardSidebar({
             </TooltipTrigger>
             <TooltipContent side="right" className="bg-popover border-border">
               <p className="font-medium">{currentTest?.name}</p>
-              {!currentTest?.available && (
-                <p className="text-xs text-muted-foreground">Coming Soon</p>
-              )}
+              {!currentTest?.available && <p className="text-xs text-muted-foreground">Coming Soon</p>}
             </TooltipContent>
-          </Tooltip>
-        )}
+          </Tooltip>}
       </div>
 
       {/* Navigation */}
@@ -272,10 +246,8 @@ export function DashboardSidebar({
         </div>
 
         {/* Admin Link */}
-        {isAdmin && (
-          <div className={cn("p-2 border-b border-border", !isMobile && isCollapsed && "flex justify-center")}>
-            {!isMobile && isCollapsed ? (
-              <Tooltip delayDuration={0}>
+        {isAdmin && <div className={cn("p-2 border-b border-border", !isMobile && isCollapsed && "flex justify-center")}>
+            {!isMobile && isCollapsed ? <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="w-full h-10 text-muted-foreground hover:text-primary">
                     <Shield className="w-5 h-5" />
@@ -284,15 +256,11 @@ export function DashboardSidebar({
                 <TooltipContent side="right" className="bg-popover border-border">
                   <p>Admin Dashboard</p>
                 </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="ghost" onClick={() => navigate('/admin')} className="w-full justify-start gap-3 text-muted-foreground hover:text-primary">
+              </Tooltip> : <Button variant="ghost" onClick={() => navigate('/admin')} className="w-full justify-start gap-3 text-muted-foreground hover:text-primary">
                 <Shield className="w-5 h-5" />
-                <span className="text-sm font-medium">Admin Dashboard</span>
-              </Button>
-            )}
-          </div>
-        )}
+                <span className="text-sm font-medium">Admin </span>
+              </Button>}
+          </div>}
 
         {/* Sign Out */}
         <div className="p-2">
@@ -325,9 +293,9 @@ export function DashboardSidebar({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              onSignOut();
-              setMobileOpen(false);
-            }}>
+            onSignOut();
+            setMobileOpen(false);
+          }}>
               Sign Out
             </AlertDialogAction>
           </AlertDialogFooter>
