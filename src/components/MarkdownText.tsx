@@ -73,7 +73,7 @@ export function MarkdownText({ text, className }: MarkdownTextProps) {
   const lines = text.split('\n');
 
   return (
-    <div className={cn("text-sm text-muted-foreground leading-relaxed", className)}>
+    <div className={cn("text-sm text-foreground leading-relaxed", className)}>
       {lines.map((line, lineIndex) => (
         <p key={lineIndex} className={lineIndex > 0 ? "mt-2" : ""}>
           {parseMarkdown(line)}
