@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, FileJson, FileSpreadsheet, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Upload, FileJson, FileSpreadsheet, Loader2, CheckCircle2, XCircle, AlertTriangle, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -288,6 +288,67 @@ export function BulkImportQuestions({ testType }: BulkImportQuestionsProps) {
     setSkippedCount(0);
   };
 
+  const downloadExampleCSV = () => {
+    const exampleData = `id,question,option_a,option_b,option_c,option_d,correct_answer,subelement,question_group
+${prefix}1A01,"What is the purpose of the amateur radio service?","Commercial broadcasting","Emergency communications and self-training","Government communications","Military operations",B,${prefix}1,${prefix}1A
+${prefix}1A02,"Which agency regulates amateur radio in the United States?","FBI","FCC","FAA","EPA",B,${prefix}1,${prefix}1A
+${prefix}1A03,"What is the minimum age requirement for an amateur radio license?","18 years old","21 years old","16 years old","No minimum age",D,${prefix}1,${prefix}1A`;
+    
+    const blob = new Blob([exampleData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `example_questions_${testType}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadExampleJSON = () => {
+    const exampleData = [
+      {
+        id: `${prefix}1A01`,
+        question: "What is the purpose of the amateur radio service?",
+        options: [
+          "Commercial broadcasting",
+          "Emergency communications and self-training",
+          "Government communications",
+          "Military operations"
+        ],
+        correct_answer: 1,
+        subelement: `${prefix}1`,
+        question_group: `${prefix}1A`
+      },
+      {
+        id: `${prefix}1A02`,
+        question: "Which agency regulates amateur radio in the United States?",
+        options: ["FBI", "FCC", "FAA", "EPA"],
+        correct_answer: 1,
+        subelement: `${prefix}1`,
+        question_group: `${prefix}1A`
+      },
+      {
+        id: `${prefix}1A03`,
+        question: "What is the minimum age requirement for an amateur radio license?",
+        options: ["18 years old", "21 years old", "16 years old", "No minimum age"],
+        correct_answer: 3,
+        subelement: `${prefix}1`,
+        question_group: `${prefix}1A`
+      }
+    ];
+    
+    const blob = new Blob([JSON.stringify(exampleData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `example_questions_${testType}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
@@ -313,8 +374,14 @@ export function BulkImportQuestions({ testType }: BulkImportQuestionsProps) {
             <CardContent className="py-2 space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <FileSpreadsheet className="w-4 h-4 mt-0.5 text-green-500" />
-                <div>
-                  <p className="font-medium">CSV</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">CSV</p>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={downloadExampleCSV}>
+                      <Download className="w-3 h-3 mr-1" />
+                      Example
+                    </Button>
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Columns: id, question, option_a, option_b, option_c, option_d, correct_answer (0-3 or A-D), subelement, question_group
                   </p>
@@ -322,8 +389,14 @@ export function BulkImportQuestions({ testType }: BulkImportQuestionsProps) {
               </div>
               <div className="flex items-start gap-2">
                 <FileJson className="w-4 h-4 mt-0.5 text-blue-500" />
-                <div>
-                  <p className="font-medium">JSON</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">JSON</p>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={downloadExampleJSON}>
+                      <Download className="w-3 h-3 mr-1" />
+                      Example
+                    </Button>
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Array of objects with: id, question, options (array), correct_answer (0-3), subelement, question_group
                   </p>
