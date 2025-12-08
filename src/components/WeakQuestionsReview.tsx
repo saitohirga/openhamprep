@@ -147,7 +147,7 @@ export function WeakQuestionsReview({
       </div>
 
       {/* Question */}
-      <QuestionCard question={currentQuestion} selectedAnswer={selectedAnswer} onSelectAnswer={handleSelectAnswer} showResult={showResult} questionNumber={currentIndex + 1} totalQuestions={weakQuestions.length} />
+      <QuestionCard question={currentQuestion} selectedAnswer={selectedAnswer} onSelectAnswer={handleSelectAnswer} showResult={showResult} questionNumber={currentIndex + 1} totalQuestions={weakQuestions.length} enableGlossaryHighlight />
 
       {/* Actions */}
       <div className="max-w-3xl mx-auto mt-8 flex justify-center gap-4">

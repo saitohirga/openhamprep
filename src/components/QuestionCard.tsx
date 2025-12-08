@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { Calculator } from "@/components/Calculator";
 import { LinkPreview } from "@/components/LinkPreview";
+import { GlossaryHighlightedText } from "@/components/GlossaryHighlightedText";
 import type { LinkData } from "@/hooks/useQuestions";
 
 interface QuestionCardProps {
@@ -23,6 +24,7 @@ interface QuestionCardProps {
   showResult?: boolean;
   questionNumber?: number;
   totalQuestions?: number;
+  enableGlossaryHighlight?: boolean; // Enable glossary term highlighting (disabled during practice tests)
   hideLinks?: boolean; // Hide links during active practice test (show only on review)
 }
 
@@ -34,6 +36,7 @@ export function QuestionCard({
   questionNumber,
   totalQuestions,
   hideLinks = false,
+  enableGlossaryHighlight = false,
 }: QuestionCardProps) {
   const options = ['A', 'B', 'C', 'D'] as const;
   const { user } = useAuth();
@@ -167,7 +170,11 @@ export function QuestionCard({
 
         {/* Question Text */}
         <h2 className="text-lg md:text-xl font-semibold text-foreground mb-6 leading-relaxed">
-          {question.question}
+          {enableGlossaryHighlight ? (
+            <GlossaryHighlightedText text={question.question} />
+          ) : (
+            question.question
+          )}
         </h2>
 
         {/* Options */}
