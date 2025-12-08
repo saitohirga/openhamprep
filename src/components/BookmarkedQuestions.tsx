@@ -75,7 +75,7 @@ export function BookmarkedQuestions({
         <QuestionCard question={selectedQuestion} selectedAnswer={selectedAnswer} onSelectAnswer={answer => {
         setSelectedAnswer(answer);
         setShowResult(true);
-      }} showResult={showResult} />
+      }} showResult={showResult} enableGlossaryHighlight />
 
         {showResult && <div className="max-w-3xl mx-auto mt-8 flex justify-center">
             <Button onClick={() => {

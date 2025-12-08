@@ -292,7 +292,7 @@ export function SubelementPractice({
       </div>
 
       {/* Question */}
-      <QuestionCard question={question} selectedAnswer={selectedAnswer} onSelectAnswer={handleSelectAnswer} showResult={showResult} />
+      <QuestionCard question={question} selectedAnswer={selectedAnswer} onSelectAnswer={handleSelectAnswer} showResult={showResult} enableGlossaryHighlight />
 
       {/* Actions */}
       <div className="max-w-3xl mx-auto mt-8 flex justify-center gap-4">
