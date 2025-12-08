@@ -314,7 +314,6 @@ export default function Dashboard() {
     const nextAction = getNextAction();
     const NextActionIcon = nextAction.icon;
 
-
     // Get motivational message based on time of day and progress
     const getMotivationalMessage = () => {
       const hour = new Date().getHours();
@@ -401,23 +400,7 @@ export default function Dashboard() {
             </div>
             
             {/* Integrated Next Action */}
-            <div className="pt-3 border-t border-current/10">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", nextAction.priority === 'ready' ? 'bg-success/20' : nextAction.priority === 'weak' ? 'bg-orange-500/20' : 'bg-primary/20')}>
-                    <NextActionIcon className={cn("w-4 h-4", nextAction.priority === 'ready' ? 'text-success' : nextAction.priority === 'weak' ? 'text-orange-500' : 'text-primary')} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{nextAction.title}</p>
-                    <p className="text-xs text-muted-foreground hidden sm:block truncate">{nextAction.description}</p>
-                  </div>
-                </div>
-                <Button onClick={nextAction.action} className={cn("shrink-0 gap-2", nextAction.priority === 'ready' && "bg-success hover:bg-success/90", nextAction.priority === 'weak' && "bg-orange-500 hover:bg-orange-600")}>
-                  {nextAction.actionLabel}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+            
           </motion.div>
 
           {/* Weekly Goals */}
@@ -452,22 +435,13 @@ export default function Dashboard() {
                   width: `${questionsProgress}%`
                 }} />
                 </div>
-                {thisWeekQuestions >= questionsGoal ? (
-                  <div className="flex items-center gap-1 text-xs text-success">
+                {thisWeekQuestions >= questionsGoal ? <div className="flex items-center gap-1 text-xs text-success">
                     <CheckCircle className="w-3 h-3" />
                     <span>Goal reached!</span>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-xs h-7 gap-1"
-                    onClick={() => setCurrentView('random-practice')}
-                  >
+                  </div> : <Button variant="outline" size="sm" className="w-full text-xs h-7 gap-1" onClick={() => setCurrentView('random-practice')}>
                     <Brain className="w-3 h-3" />
                     Practice Questions
-                  </Button>
-                )}
+                  </Button>}
               </div>
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
@@ -481,22 +455,13 @@ export default function Dashboard() {
                   width: `${testsProgress}%`
                 }} />
                 </div>
-                {thisWeekTests >= testsGoal ? (
-                  <div className="flex items-center gap-1 text-xs text-success">
+                {thisWeekTests >= testsGoal ? <div className="flex items-center gap-1 text-xs text-success">
                     <CheckCircle className="w-3 h-3" />
                     <span>Goal reached!</span>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-xs h-7 gap-1"
-                    onClick={() => setCurrentView('practice-test')}
-                  >
+                  </div> : <Button variant="outline" size="sm" className="w-full text-xs h-7 gap-1" onClick={() => setCurrentView('practice-test')}>
                     <Target className="w-3 h-3" />
                     Take Test
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
           </motion.div>
