@@ -11,6 +11,37 @@
     <meta property="og:description" content="Free practice tests for FCC Amateur Radio License Exams" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      /* Inline critical CSS for immediate FCP */
+      #root:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #0a0a0a;
+      }
+      #root:empty::before {
+        content: "";
+        width: 40px;
+        height: 40px;
+        border: 3px solid #1a1a1a;
+        border-top-color: #b86800;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (prefers-color-scheme: light) {
+        #root:empty {
+          background: #ffffff;
+        }
+        #root:empty::before {
+          border-color: #e5e5e5;
+          border-top-color: #b86800;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
