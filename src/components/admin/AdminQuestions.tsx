@@ -49,6 +49,7 @@ interface Question {
   subelement: string;
   question_group: string;
   links?: LinkData[];
+  explanation?: string | null;
 }
 
 interface AdminQuestionsProps {
@@ -83,6 +84,7 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
   const [editSubelement, setEditSubelement] = useState("");
   const [editQuestionGroup, setEditQuestionGroup] = useState("");
   const [editLinks, setEditLinks] = useState<LinkData[]>([]);
+  const [editExplanation, setEditExplanation] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [isAddingLink, setIsAddingLink] = useState(false);
 
@@ -91,14 +93,15 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
     queryFn: async () => {
       const { data, error } = await supabase
         .from('questions')
-        .select('id, question, options, correct_answer, subelement, question_group, links')
+        .select('id, question, options, correct_answer, subelement, question_group, links, explanation')
         .order('id', { ascending: true });
       
       if (error) throw error;
       return data.map(q => ({
         ...q,
         options: q.options as string[],
-        links: (Array.isArray(q.links) ? q.links : []) as unknown as LinkData[]
+        links: (Array.isArray(q.links) ? q.links : []) as unknown as LinkData[],
+        explanation: q.explanation
       })) as Question[];
     },
   });
@@ -143,7 +146,7 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
   });
 
   const updateQuestion = useMutation({
-    mutationFn: async (question: Question) => {
+    mutationFn: async (question: Question & { explanation?: string | null }) => {
       const { error } = await supabase
         .from('questions')
         .update({
@@ -152,6 +155,7 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
           correct_answer: question.correct_answer,
           subelement: question.subelement.trim(),
           question_group: question.question_group.trim(),
+          explanation: question.explanation?.trim() || null,
         })
         .eq('id', question.id);
       
@@ -304,6 +308,7 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
     setEditSubelement(q.subelement);
     setEditQuestionGroup(q.question_group);
     setEditLinks(q.links || []);
+    setEditExplanation(q.explanation || "");
     setNewLinkUrl("");
   };
 
@@ -325,6 +330,7 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
       correct_answer: parseInt(editCorrectAnswer),
       subelement: editSubelement,
       question_group: editQuestionGroup,
+      explanation: editExplanation,
     });
   };
 
@@ -402,6 +408,21 @@ export function AdminQuestions({ testType, highlightQuestionId }: AdminQuestions
                   <SelectItem value="3">D</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Explanation Section */}
+            <div>
+              <Label>Explanation (shown after answering)</Label>
+              <Textarea
+                placeholder="Explain why this is the correct answer..."
+                value={editExplanation}
+                onChange={(e) => setEditExplanation(e.target.value)}
+                rows={4}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This explanation will be shown to users after they answer the question.
+              </p>
             </div>
 
             <Separator />

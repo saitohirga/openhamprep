@@ -296,6 +296,7 @@ export type Database = {
         Row: {
           correct_answer: number
           created_at: string
+          explanation: string | null
           id: string
           links: Json
           options: Json
@@ -306,6 +307,7 @@ export type Database = {
         Insert: {
           correct_answer: number
           created_at?: string
+          explanation?: string | null
           id: string
           links?: Json
           options: Json
@@ -316,6 +318,7 @@ export type Database = {
         Update: {
           correct_answer?: number
           created_at?: string
+          explanation?: string | null
           id?: string
           links?: Json
           options?: Json

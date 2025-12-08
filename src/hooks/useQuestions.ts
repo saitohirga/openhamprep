@@ -24,6 +24,7 @@ export interface Question {
   subelement: string;
   group: string;
   links: LinkData[];
+  explanation?: string | null;
 }
 
 interface DbQuestion {
@@ -34,6 +35,7 @@ interface DbQuestion {
   subelement: string;
   question_group: string;
   links: unknown;
+  explanation: string | null;
 }
 
 const answerMap: Record<number, 'A' | 'B' | 'C' | 'D'> = {
@@ -59,6 +61,7 @@ function transformQuestion(dbQuestion: DbQuestion): Question {
     subelement: dbQuestion.subelement,
     group: dbQuestion.question_group,
     links,
+    explanation: dbQuestion.explanation,
   };
 }
 
