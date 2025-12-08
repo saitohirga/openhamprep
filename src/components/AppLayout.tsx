@@ -99,7 +99,7 @@ export function AppLayout({ children, currentView, onViewChange, selectedTest, o
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background flex w-full">
+      <div className="h-screen bg-background flex w-full overflow-hidden">
         <DashboardSidebar
           currentView={currentView}
           onViewChange={onViewChange}
@@ -115,7 +115,7 @@ export function AppLayout({ children, currentView, onViewChange, selectedTest, o
           selectedTest={selectedTest}
           onTestChange={onTestChange}
         />
-        <div className="flex-1 overflow-auto pt-16 md:pt-0">
+        <div className="flex-1 overflow-hidden pt-16 md:pt-0 flex flex-col">
           {children}
         </div>
       </div>
