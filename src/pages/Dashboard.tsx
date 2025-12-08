@@ -24,7 +24,8 @@ import {
   XCircle,
   Loader2,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  Flame
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,21 @@ export default function Dashboard() {
         .from('question_attempts')
         .select('*')
         .eq('user_id', user!.id);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile-stats', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('best_streak')
+        .eq('id', user!.id)
+        .maybeSingle();
       
       if (error) throw error;
       return data;
@@ -296,7 +312,7 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+            className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
           >
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -328,6 +344,14 @@ export default function Dashboard() {
                 <span className="text-xs text-muted-foreground">Questions</span>
               </div>
               <p className="text-2xl font-mono font-bold text-foreground">{totalAttempts}</p>
+            </div>
+
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Flame className="w-4 h-4 text-primary" />
+                <span className="text-xs text-muted-foreground">Best Streak</span>
+              </div>
+              <p className="text-2xl font-mono font-bold text-primary">{profile?.best_streak || 0}</p>
             </div>
           </motion.div>
 
