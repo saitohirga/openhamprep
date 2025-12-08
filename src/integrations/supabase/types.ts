@@ -53,6 +53,27 @@ export type Database = {
           },
         ]
       }
+      glossary_terms: {
+        Row: {
+          created_at: string
+          definition: string
+          id: string
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          definition: string
+          id?: string
+          term: string
+        }
+        Update: {
+          created_at?: string
+          definition?: string
+          id?: string
+          term?: string
+        }
+        Relationships: []
+      }
       practice_test_results: {
         Row: {
           completed_at: string
