@@ -16,6 +16,8 @@ export default function Admin() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
   const navigate = useNavigate();
   const [selectedTest, setSelectedTest] = useState<TestType>('technician');
+  const [activeTab, setActiveTab] = useState("stats");
+  const [linkQuestionId, setLinkQuestionId] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -47,6 +49,11 @@ export default function Admin() {
     }
   };
 
+  const handleAddLinkToQuestion = (questionId: string) => {
+    setLinkQuestionId(questionId);
+    setActiveTab("links");
+  };
+
   return (
     <AppLayout 
       currentView="dashboard"
@@ -61,7 +68,10 @@ export default function Admin() {
             <p className="text-muted-foreground mt-2">Manage glossary terms, questions, and learning resources</p>
           </div>
 
-          <Tabs defaultValue="stats" className="w-full">
+          <Tabs value={activeTab} onValueChange={(value) => {
+            setActiveTab(value);
+            if (value !== "links") setLinkQuestionId("");
+          }} className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-8">
               <TabsTrigger value="stats">Statistics</TabsTrigger>
               <TabsTrigger value="glossary">Glossary Terms</TabsTrigger>
@@ -70,7 +80,7 @@ export default function Admin() {
             </TabsList>
 
             <TabsContent value="stats">
-              <AdminStats testType={selectedTest} />
+              <AdminStats testType={selectedTest} onAddLinkToQuestion={handleAddLinkToQuestion} />
             </TabsContent>
 
             <TabsContent value="glossary">
@@ -82,7 +92,7 @@ export default function Admin() {
             </TabsContent>
 
             <TabsContent value="links">
-              <AdminLinks testType={selectedTest} />
+              <AdminLinks testType={selectedTest} initialQuestionId={linkQuestionId} />
             </TabsContent>
           </Tabs>
         </div>
