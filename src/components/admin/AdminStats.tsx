@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface AdminStatsProps {
   testType: 'technician' | 'general' | 'extra';
+  onAddLinkToQuestion?: (questionId: string) => void;
 }
 
 const TEST_TYPE_PREFIXES = {
@@ -27,7 +28,7 @@ interface QuestionStats {
   firstTryTotal: number;
 }
 
-export function AdminStats({ testType }: AdminStatsProps) {
+export function AdminStats({ testType, onAddLinkToQuestion }: AdminStatsProps) {
   const prefix = TEST_TYPE_PREFIXES[testType];
 
   // Fetch questions with their link status
@@ -267,7 +268,9 @@ export function AdminStats({ testType }: AdminStatsProps) {
               {hardestQuestions.map((q) => (
                 <div 
                   key={q.id} 
-                  className="p-3 rounded-lg border border-border bg-card"
+                  className={`p-3 rounded-lg border border-border bg-card ${!q.hasLinks && onAddLinkToQuestion ? 'cursor-pointer hover:border-primary/50 hover:bg-secondary/30 transition-colors' : ''}`}
+                  onClick={() => !q.hasLinks && onAddLinkToQuestion?.(q.id)}
+                  title={!q.hasLinks ? "Click to add a learning link" : undefined}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -281,8 +284,9 @@ export function AdminStats({ testType }: AdminStatsProps) {
                             Has Links
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs text-muted-foreground">
-                            No Links
+                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50">
+                            <LinkIcon className="w-3 h-3 mr-1" />
+                            Add Link
                           </Badge>
                         )}
                       </div>
@@ -330,7 +334,9 @@ export function AdminStats({ testType }: AdminStatsProps) {
               {needsResources.map((q) => (
                 <div 
                   key={q.id} 
-                  className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
+                  className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/10 transition-colors"
+                  onClick={() => onAddLinkToQuestion?.(q.id)}
+                  title="Click to add a learning link"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -341,6 +347,10 @@ export function AdminStats({ testType }: AdminStatsProps) {
                         <span className="text-xs text-muted-foreground">
                           {q.subelement} / {q.question_group}
                         </span>
+                        <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50">
+                          <LinkIcon className="w-3 h-3 mr-1" />
+                          Add Link
+                        </Badge>
                       </div>
                       <p className="text-sm text-foreground line-clamp-2">{q.question}</p>
                     </div>

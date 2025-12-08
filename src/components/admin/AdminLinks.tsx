@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ interface QuestionWithLinks {
 
 interface AdminLinksProps {
   testType: 'technician' | 'general' | 'extra';
+  initialQuestionId?: string;
 }
 
 const TEST_TYPE_PREFIXES = {
@@ -45,12 +46,19 @@ const TEST_TYPE_PREFIXES = {
   extra: 'E',
 };
 
-export function AdminLinks({ testType }: AdminLinksProps) {
+export function AdminLinks({ testType, initialQuestionId = "" }: AdminLinksProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedQuestionId, setSelectedQuestionId] = useState("");
+  const [selectedQuestionId, setSelectedQuestionId] = useState(initialQuestionId);
   const [newUrl, setNewUrl] = useState("");
   const [isAddingLink, setIsAddingLink] = useState(false);
+
+  // Update selected question when initialQuestionId changes
+  useEffect(() => {
+    if (initialQuestionId) {
+      setSelectedQuestionId(initialQuestionId);
+    }
+  }, [initialQuestionId]);
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['admin-questions-with-links'],
