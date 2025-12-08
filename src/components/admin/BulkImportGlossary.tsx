@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, FileJson, FileSpreadsheet, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Upload, FileJson, FileSpreadsheet, Loader2, CheckCircle2, XCircle, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -228,6 +228,60 @@ export function BulkImportGlossary() {
     setSkippedCount(0);
   };
 
+  const downloadExampleCSV = () => {
+    const exampleData = `term,definition
+Antenna,"A device that transmits and/or receives radio waves"
+Bandwidth,"The range of frequencies occupied by a signal"
+Carrier,"A radio wave that can be modulated to carry information"
+Decibel (dB),"A unit used to express the ratio of two power levels"
+Frequency,"The number of cycles per second of a radio wave, measured in Hertz"`;
+    
+    const blob = new Blob([exampleData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'example_glossary.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadExampleJSON = () => {
+    const exampleData = [
+      {
+        term: "Antenna",
+        definition: "A device that transmits and/or receives radio waves"
+      },
+      {
+        term: "Bandwidth",
+        definition: "The range of frequencies occupied by a signal"
+      },
+      {
+        term: "Carrier",
+        definition: "A radio wave that can be modulated to carry information"
+      },
+      {
+        term: "Decibel (dB)",
+        definition: "A unit used to express the ratio of two power levels"
+      },
+      {
+        term: "Frequency",
+        definition: "The number of cycles per second of a radio wave, measured in Hertz"
+      }
+    ];
+    
+    const blob = new Blob([JSON.stringify(exampleData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'example_glossary.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
@@ -253,8 +307,14 @@ export function BulkImportGlossary() {
             <CardContent className="py-2 space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <FileSpreadsheet className="w-4 h-4 mt-0.5 text-green-500" />
-                <div>
-                  <p className="font-medium">CSV</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">CSV</p>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={downloadExampleCSV}>
+                      <Download className="w-3 h-3 mr-1" />
+                      Example
+                    </Button>
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Columns: term, definition
                   </p>
@@ -262,8 +322,14 @@ export function BulkImportGlossary() {
               </div>
               <div className="flex items-start gap-2">
                 <FileJson className="w-4 h-4 mt-0.5 text-blue-500" />
-                <div>
-                  <p className="font-medium">JSON</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">JSON</p>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={downloadExampleJSON}>
+                      <Download className="w-3 h-3 mr-1" />
+                      Example
+                    </Button>
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Array of objects with: term, definition
                   </p>
