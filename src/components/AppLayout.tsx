@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { DashboardSidebar, TestType, testTypes } from '@/components/DashboardSidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Loader2 } from 'lucide-react';
 
@@ -14,9 +14,11 @@ interface AppLayoutProps {
   children: ReactNode;
   currentView: View;
   onViewChange: (view: View) => void;
+  selectedTest: TestType;
+  onTestChange: (test: TestType) => void;
 }
 
-export function AppLayout({ children, currentView, onViewChange }: AppLayoutProps) {
+export function AppLayout({ children, currentView, onViewChange, selectedTest, onTestChange }: AppLayoutProps) {
   const { user, loading: authLoading, signOut } = useAuth();
   const { bookmarks } = useBookmarks();
   const navigate = useNavigate();
@@ -92,6 +94,9 @@ export function AppLayout({ children, currentView, onViewChange }: AppLayoutProp
     email: user.email || null,
   };
 
+  const currentTest = testTypes.find(t => t.id === selectedTest);
+  const isTestAvailable = currentTest?.available ?? false;
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background flex w-full">
@@ -103,10 +108,12 @@ export function AppLayout({ children, currentView, onViewChange }: AppLayoutProp
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           weakQuestionCount={weakQuestionIds.length}
           bookmarkCount={bookmarks?.length || 0}
-          isTestAvailable={true}
+          isTestAvailable={isTestAvailable}
           userInfo={userInfo}
           userId={user.id}
           onProfileUpdate={handleProfileUpdate}
+          selectedTest={selectedTest}
+          onTestChange={onTestChange}
         />
         <div className="flex-1 overflow-auto pt-16 md:pt-0">
           {children}

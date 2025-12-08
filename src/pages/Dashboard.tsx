@@ -6,13 +6,6 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,7 +23,6 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Lock,
   ArrowRight,
   AlertTriangle
 } from 'lucide-react';
@@ -43,14 +35,7 @@ import { BookmarkedQuestions } from '@/components/BookmarkedQuestions';
 import { SubelementPractice } from '@/components/SubelementPractice';
 import { TestResultReview } from '@/components/TestResultReview';
 import { AppLayout } from '@/components/AppLayout';
-
-type TestType = 'technician' | 'general' | 'extra';
-
-const testTypes = [
-  { id: 'technician' as TestType, name: 'Technician', available: true },
-  { id: 'general' as TestType, name: 'General', available: false },
-  { id: 'extra' as TestType, name: 'Amateur Extra', available: false },
-];
+import { TestType, testTypes } from '@/components/DashboardSidebar';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -255,36 +240,6 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen py-6 px-4 md:px-8 radio-wave-bg">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <Select value={selectedTest} onValueChange={(v) => setSelectedTest(v as TestType)}>
-                <SelectTrigger className="w-[180px] bg-card border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  {testTypes.map((test) => (
-                    <SelectItem 
-                      key={test.id} 
-                      value={test.id}
-                    >
-                      <span className="flex items-center gap-2">
-                        {test.name}
-                        {!test.available && (
-                          <Lock className="w-3 h-3 text-muted-foreground" />
-                        )}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!isTestAvailable && (
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                  Coming Soon
-                </span>
-              )}
-            </div>
-          </div>
 
           {/* Test Readiness Indicator */}
           <motion.div
@@ -489,7 +444,12 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AppLayout currentView={currentView} onViewChange={handleViewChange}>
+      <AppLayout 
+        currentView={currentView} 
+        onViewChange={handleViewChange}
+        selectedTest={selectedTest}
+        onTestChange={setSelectedTest}
+      >
         {renderContent()}
       </AppLayout>
     </>

@@ -1,10 +1,17 @@
-import { Play, Zap, BookOpen, AlertTriangle, Bookmark, LogOut, Radio, PanelLeftClose, PanelLeft, BarChart3, Menu } from "lucide-react";
+import { Play, Zap, BookOpen, AlertTriangle, Bookmark, LogOut, Radio, PanelLeftClose, PanelLeft, BarChart3, Menu, Lock, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileModal } from "@/components/ProfileModal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +23,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+
+export type TestType = 'technician' | 'general' | 'extra';
+
+export const testTypes = [
+  { id: 'technician' as TestType, name: 'Technician', available: true },
+  { id: 'general' as TestType, name: 'General', available: false },
+  { id: 'extra' as TestType, name: 'Amateur Extra', available: false },
+];
+
 type View = 'dashboard' | 'practice-test' | 'random-practice' | 'weak-questions' | 'bookmarks' | 'subelement-practice' | 'review-test';
 interface NavItem {
   id: View;
@@ -40,6 +56,8 @@ interface DashboardSidebarProps {
   userInfo?: UserInfo;
   userId?: string;
   onProfileUpdate?: () => void;
+  selectedTest: TestType;
+  onTestChange: (test: TestType) => void;
 }
 export function DashboardSidebar({
   currentView,
@@ -52,7 +70,9 @@ export function DashboardSidebar({
   isTestAvailable,
   userInfo,
   userId,
-  onProfileUpdate
+  onProfileUpdate,
+  selectedTest,
+  onTestChange
 }: DashboardSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -103,6 +123,8 @@ export function DashboardSidebar({
       setMobileOpen(false);
     }
   };
+  const currentTest = testTypes.find(t => t.id === selectedTest);
+
   const NavContent = ({
     isMobile = false
   }: {
@@ -120,6 +142,54 @@ export function DashboardSidebar({
         {!isMobile && <Button variant="ghost" size="icon" onClick={onToggleCollapse} className={cn("h-7 w-7 shrink-0", isCollapsed && "hidden md:flex")}>
             {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </Button>}
+      </div>
+
+      {/* Test Type Selector */}
+      <div className={cn("border-b border-border", !isMobile && isCollapsed ? "p-2" : "p-3")}>
+        {(isMobile || !isCollapsed) ? (
+          <div>
+            <label className="text-xs text-muted-foreground font-medium mb-1.5 block">License Class</label>
+            <Select value={selectedTest} onValueChange={(v) => onTestChange(v as TestType)}>
+              <SelectTrigger className="w-full bg-secondary/50 border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border z-50">
+                {testTypes.map((test) => (
+                  <SelectItem 
+                    key={test.id} 
+                    value={test.id}
+                  >
+                    <span className="flex items-center gap-2">
+                      {test.name}
+                      {!test.available && (
+                        <Lock className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!currentTest?.available && (
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Coming Soon
+              </span>
+            )}
+          </div>
+        ) : (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button className="w-full flex items-center justify-center p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors">
+                <span className="text-xs font-bold text-primary">{selectedTest[0].toUpperCase()}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="bg-popover border-border">
+              <p className="font-medium">{currentTest?.name}</p>
+              {!currentTest?.available && (
+                <p className="text-xs text-muted-foreground">Coming Soon</p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {/* Navigation */}
