@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, Search, Loader2, Pencil, Link as LinkIcon, ExternalLink, ThumbsUp, ThumbsDown, FileText, Filter, X } from "lucide-react";
 import { BulkImportQuestions } from "./BulkImportQuestions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useExplanationFeedbackStats } from "@/hooks/useExplanationFeedback";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -54,6 +55,7 @@ export function AdminQuestions({
   const [searchTerm, setSearchTerm] = useState("");
   const [subelementFilter, setSubelementFilter] = useState<string>("all");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [showNegativeFeedbackOnly, setShowNegativeFeedbackOnly] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // New question form state
@@ -291,7 +293,9 @@ export function AdminQuestions({
                           q.question.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSubelement = subelementFilter === "all" || q.subelement === subelementFilter;
     const matchesGroup = groupFilter === "all" || q.question_group === groupFilter;
-    return matchesSearch && matchesSubelement && matchesGroup;
+    const matchesNegativeFeedback = !showNegativeFeedbackOnly || 
+      (feedbackStats[q.id] && feedbackStats[q.id].notHelpful > feedbackStats[q.id].helpful);
+    return matchesSearch && matchesSubelement && matchesGroup && matchesNegativeFeedback;
   });
   
   // Reset group filter when subelement changes and group is no longer valid
@@ -589,13 +593,28 @@ export function AdminQuestions({
                   ))}
                 </SelectContent>
               </Select>
-              {(subelementFilter !== "all" || groupFilter !== "all") && (
+              <div className="flex items-center gap-2 ml-2">
+                <Checkbox 
+                  id="negative-feedback-filter"
+                  checked={showNegativeFeedbackOnly}
+                  onCheckedChange={(checked) => setShowNegativeFeedbackOnly(checked === true)}
+                />
+                <label 
+                  htmlFor="negative-feedback-filter" 
+                  className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
+                >
+                  <ThumbsDown className="w-3 h-3 text-destructive" />
+                  Negative feedback
+                </label>
+              </div>
+              {(subelementFilter !== "all" || groupFilter !== "all" || showNegativeFeedbackOnly) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSubelementFilter("all");
                     setGroupFilter("all");
+                    setShowNegativeFeedbackOnly(false);
                   }}
                   className="text-muted-foreground"
                 >
