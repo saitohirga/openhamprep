@@ -330,10 +330,10 @@ export default function About() {
                     filter: 'brightness(0) saturate(100%) invert(43%) sepia(93%) saturate(364%) hue-rotate(143deg) brightness(95%) contrast(90%)'
                   }} />
                     
-                    {/* Marker overlay */}
+                    {/* Marker overlay - positioned near Raleigh */}
                     <div className="absolute" style={{
-                    left: '50%',
-                    top: '50%',
+                    left: '72%',
+                    top: '38%',
                     transform: 'translate(-50%, -50%)'
                   }}>
                       <div className="relative">
