@@ -6,7 +6,7 @@ interface MarketingFooterProps {
 }
 
 export function MarketingFooter({ className, showOpenSource = true }: MarketingFooterProps) {
-  const tagline = showOpenSource 
+  const tagline = showOpenSource
     ? "Official FCC question pools • Free to use • Open Source"
     : "Official FCC question pools • Free to use";
 
@@ -15,7 +15,7 @@ export function MarketingFooter({ className, showOpenSource = true }: MarketingF
       <div className="max-w-6xl mx-auto text-center text-muted-foreground space-y-3">
         <p className="text-sm">{tagline}</p>
         <p className="text-sm">
-          A test prep app for the{" "}
+          A test prep app by the{" "}
           <a
             href="https://www.rars.org/"
             target="_blank"
@@ -26,9 +26,7 @@ export function MarketingFooter({ className, showOpenSource = true }: MarketingF
           </a>
         </p>
         <p className="text-sm">Made with ❤️ in North Carolina</p>
-        <p className="text-xs mt-4">
-          © {new Date().getFullYear()} Brad Bazemore. All rights reserved.
-        </p>
+        <p className="text-xs mt-4">© {new Date().getFullYear()} Brad Bazemore. All rights reserved.</p>
       </div>
     </footer>
   );
