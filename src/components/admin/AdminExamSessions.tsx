@@ -47,7 +47,8 @@ export const AdminExamSessions = () => {
     total: number;
   } | null>(null);
 
-  const { data: existingSessions = [], refetch } = useExamSessions();
+  const { data: sessionsData, refetch } = useExamSessions({ pageSize: 1000 });
+  const existingSessions = sessionsData?.sessions ?? [];
   const { data: totalCount = 0, refetch: refetchCount } = useExamSessionsCount();
   const importMutation = useBulkImportExamSessions();
 

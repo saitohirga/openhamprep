@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, addMonths } from 'date-fns';
-import { MapPin, Calendar, List, Map, Clock, Phone, Mail, Users, Target, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, List, Map, Clock, Phone, Mail, Users, Target, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,12 +68,20 @@ export const ExamSessionSearch = () => {
   const [selectedSession, setSelectedSession] = useState<ExamSession | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [studyIntensity, setStudyIntensity] = useState<'light' | 'moderate' | 'intensive'>('moderate');
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
 
-  const { data: allSessions = [], isLoading } = useExamSessions({
+  const { data, isLoading } = useExamSessions({
     startDate,
     endDate,
     state: state || undefined,
+    page,
+    pageSize,
   });
+
+  const sessions = data?.sessions ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const { data: userTarget } = useUserTargetExam(user?.id);
   const saveTargetMutation = useSaveTargetExam();
@@ -81,12 +89,26 @@ export const ExamSessionSearch = () => {
 
   // Filter sessions by zip code prefix for local search
   const filteredSessions = useMemo(() => {
-    if (!zipCode) return allSessions;
+    if (!zipCode) return sessions;
     const zipPrefix = zipCode.substring(0, 3);
-    return allSessions.filter((s) => s.zip.startsWith(zipPrefix));
-  }, [allSessions, zipCode]);
+    return sessions.filter((s) => s.zip.startsWith(zipPrefix));
+  }, [sessions, zipCode]);
 
-  const displayedSessions = viewMode === 'map' && showAllOnMap ? allSessions : filteredSessions;
+  const displayedSessions = viewMode === 'map' && showAllOnMap ? sessions : filteredSessions;
+
+  // Reset to page 1 when filters change
+  const handleStateChange = (v: string) => {
+    setState(v === 'all' ? '' : v);
+    setPage(1);
+  };
+  const handleStartDateChange = (v: string) => {
+    setStartDate(v);
+    setPage(1);
+  };
+  const handleEndDateChange = (v: string) => {
+    setEndDate(v);
+    setPage(1);
+  };
 
   const handleSaveTarget = () => {
     if (!user || !selectedSession) return;
@@ -174,7 +196,7 @@ export const ExamSessionSearch = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State</Label>
-              <Select value={state || 'all'} onValueChange={(v) => setState(v === 'all' ? '' : v)}>
+              <Select value={state || 'all'} onValueChange={handleStateChange}>
                 <SelectTrigger id="state">
                   <SelectValue placeholder="All states" />
                 </SelectTrigger>
@@ -192,7 +214,7 @@ export const ExamSessionSearch = () => {
                 id="start-date"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -201,7 +223,7 @@ export const ExamSessionSearch = () => {
                 id="end-date"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => handleEndDateChange(e.target.value)}
               />
             </div>
           </div>
@@ -214,13 +236,12 @@ export const ExamSessionSearch = () => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle>
-                {isLoading ? 'Searching...' : `${filteredSessions.length} Sessions Found`}
+                {isLoading ? 'Searching...' : `${totalCount} Sessions Found`}
               </CardTitle>
-              {zipCode && (
-                <CardDescription>
-                  Showing sessions near ZIP {zipCode}
-                </CardDescription>
-              )}
+              <CardDescription>
+                {zipCode ? `Showing sessions near ZIP ${zipCode} • ` : ''}
+                Page {page} of {totalPages}
+              </CardDescription>
             </div>
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')}>
               <TabsList>
@@ -349,6 +370,34 @@ export const ExamSessionSearch = () => {
                 )}
               </div>
             </ScrollArea>
+          )}
+          {/* Pagination Controls */}
+          {viewMode === 'list' && totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalCount)} of {totalCount}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1 || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isLoading}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
