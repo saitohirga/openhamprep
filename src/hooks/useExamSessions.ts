@@ -41,16 +41,24 @@ export const useExamSessions = (filters?: {
   startDate?: string;
   endDate?: string;
   state?: string;
+  page?: number;
+  pageSize?: number;
 }) => {
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 50;
+
   return useQuery({
     queryKey: ['exam-sessions', filters],
     queryFn: async () => {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = supabase
         .from('exam_sessions')
-        .select('*')
+        .select('*', { count: 'exact' })
         .gte('exam_date', new Date().toISOString().split('T')[0])
         .order('exam_date', { ascending: true })
-        .limit(5000); // Increase limit to handle larger datasets
+        .range(from, to);
 
       if (filters?.startDate) {
         query = query.gte('exam_date', filters.startDate);
@@ -62,9 +70,15 @@ export const useExamSessions = (filters?: {
         query = query.eq('state', filters.state);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as ExamSession[];
+      return {
+        sessions: data as ExamSession[],
+        totalCount: count ?? 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count ?? 0) / pageSize),
+      };
     },
   });
 };
