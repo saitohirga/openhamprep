@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, addMonths } from 'date-fns';
-import { MapPin, Calendar, List, Map, Clock, Phone, Mail, Users, Target, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, List, Map, Clock, Phone, Mail, Users, Target, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -425,16 +425,26 @@ export const ExamSessionSearch = () => {
         <Card className="border-primary">
           <CardContent className="p-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <p className="font-medium">{selectedSession.location_name || selectedSession.title}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{selectedSession.location_name || selectedSession.title}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatDate(selectedSession.exam_date)} • {selectedSession.city}, {selectedSession.state}
                 </p>
               </div>
-              <Button onClick={() => setShowSaveDialog(true)}>
-                <Target className="h-4 w-4 mr-2" />
-                Set as Target Date
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setShowSaveDialog(true)}>
+                  <Target className="h-4 w-4 mr-2" />
+                  Set as Target Date
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedSession(null)}
+                  aria-label="Close selection"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
