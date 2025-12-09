@@ -110,6 +110,24 @@ export const useExamSessionsCount = () => {
   });
 };
 
+// Hook to get the last updated timestamp for exam sessions
+export const useExamSessionsLastUpdated = () => {
+  return useQuery({
+    queryKey: ['exam-sessions-last-updated'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exam_sessions')
+        .select('updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.updated_at ?? null;
+    },
+  });
+};
+
 export const useUserTargetExam = (userId?: string) => {
   return useQuery({
     queryKey: ['user-target-exam', userId],

@@ -1,13 +1,14 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2, Loader2, Download, MapPin } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle2, Loader2, Download, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useExamSessions, useExamSessionsCount, useBulkImportExamSessions, type ExamSession } from '@/hooks/useExamSessions';
+import { useExamSessions, useExamSessionsCount, useExamSessionsLastUpdated, useBulkImportExamSessions, type ExamSession } from '@/hooks/useExamSessions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface ParsedSession {
   title: string | null;
@@ -50,6 +51,7 @@ export const AdminExamSessions = () => {
   const { data: sessionsData, refetch } = useExamSessions({ pageSize: 1000 });
   const existingSessions = sessionsData?.sessions ?? [];
   const { data: totalCount = 0, refetch: refetchCount } = useExamSessionsCount();
+  const { data: lastUpdated, refetch: refetchLastUpdated } = useExamSessionsLastUpdated();
   const importMutation = useBulkImportExamSessions();
 
   // Calculate sessions needing geocoding
@@ -92,6 +94,7 @@ export const AdminExamSessions = () => {
       // Refresh the data
       refetch();
       refetchCount();
+      refetchLastUpdated();
     } catch (err) {
       toast.error('Geocoding failed');
       console.error(err);
@@ -251,6 +254,7 @@ export const AdminExamSessions = () => {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        refetchLastUpdated();
       },
     });
   };
@@ -396,6 +400,13 @@ export const AdminExamSessions = () => {
               <CardTitle>Current Sessions</CardTitle>
               <CardDescription>
                 {totalCount} exam sessions in database
+                {lastUpdated && (
+                  <span className="flex items-center gap-1 mt-1">
+                    <Clock className="h-3 w-3" />
+                    Last updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
+                    <span className="text-xs">({format(new Date(lastUpdated), 'MMM d, yyyy h:mm a')})</span>
+                  </span>
+                )}
               </CardDescription>
             </div>
             {totalCount > 0 && existingSessions.some((s) => !s.latitude || !s.longitude) && (
