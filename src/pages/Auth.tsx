@@ -348,7 +348,7 @@ export default function Auth() {
             </div>
           </div>
           <h1 className="text-2xl font-mono font-bold text-foreground">
-            RARS Test Prep
+            Open Ham Prep
           </h1>
           <p className="text-muted-foreground mt-2">
             {isLogin ? 'Sign in to track your progress' : 'Create an account to get started'}
