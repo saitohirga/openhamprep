@@ -41,27 +41,52 @@ export const AdminExamSessions = () => {
   const [parsing, setParsing] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [geocodeProgress, setGeocodeProgress] = useState<{
+    processed: number;
+    remaining: number;
+    total: number;
+  } | null>(null);
 
   const { data: existingSessions = [], refetch } = useExamSessions();
   const { data: totalCount = 0, refetch: refetchCount } = useExamSessionsCount();
   const importMutation = useBulkImportExamSessions();
 
+  // Calculate sessions needing geocoding
+  const sessionsNeedingGeocode = existingSessions.filter((s) => !s.latitude || !s.longitude).length;
+
   const handleGeocode = async () => {
     setGeocoding(true);
+    const initialRemaining = sessionsNeedingGeocode;
+    let totalProcessed = 0;
+    
     try {
-      const { data, error } = await supabase.functions.invoke('geocode-addresses');
+      // Keep processing until all are done or an error occurs
+      let remaining = initialRemaining;
       
-      if (error) {
-        toast.error('Geocoding failed: ' + error.message);
-        return;
-      }
+      while (remaining > 0) {
+        const { data, error } = await supabase.functions.invoke('geocode-addresses');
+        
+        if (error) {
+          toast.error('Geocoding failed: ' + error.message);
+          break;
+        }
 
-      toast.success(data.message);
-      
-      // If there are more to process, show remaining count
-      if (data.remaining > 0) {
-        toast.info(`${data.remaining} sessions still need coordinates. Run geocoding again.`);
+        totalProcessed += data.processed;
+        remaining = data.remaining;
+        
+        setGeocodeProgress({
+          processed: totalProcessed,
+          remaining: remaining,
+          total: initialRemaining,
+        });
+
+        // If nothing was processed this round, break to avoid infinite loop
+        if (data.processed === 0) {
+          break;
+        }
       }
+      
+      toast.success(`Geocoded ${totalProcessed} sessions`);
       
       // Refresh the data
       refetch();
@@ -71,6 +96,7 @@ export const AdminExamSessions = () => {
       console.error(err);
     } finally {
       setGeocoding(false);
+      setGeocodeProgress(null);
     }
   };
 
@@ -387,6 +413,25 @@ export const AdminExamSessions = () => {
               </Button>
             )}
           </div>
+          {geocodeProgress && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Geocoding addresses... ({geocodeProgress.processed} of {geocodeProgress.total})
+                </span>
+                <span className="font-medium">
+                  {Math.round((geocodeProgress.processed / geocodeProgress.total) * 100)}%
+                </span>
+              </div>
+              <Progress 
+                value={(geocodeProgress.processed / geocodeProgress.total) * 100} 
+                className="h-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                This may take a while due to rate limiting. Please don't close this page.
+              </p>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {totalCount === 0 ? (
