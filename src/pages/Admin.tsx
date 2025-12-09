@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminGlossary } from "@/components/admin/AdminGlossary";
 import { AdminQuestions } from "@/components/admin/AdminQuestions";
 import { AdminStats } from "@/components/admin/AdminStats";
-import { Loader2, ShieldAlert, BookOpen } from "lucide-react";
+import { AdminExamSessions } from "@/components/admin/AdminExamSessions";
+import { Loader2, ShieldAlert, BookOpen, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLayout } from "@/components/AppLayout";
 import { TestType } from "@/components/DashboardSidebar";
@@ -24,7 +25,7 @@ export default function Admin() {
   const [sidebarTest, setSidebarTest] = useState<TestType>('technician');
   const [adminExamType, setAdminExamType] = useState<TestType>('technician');
   const [activeTab, setActiveTab] = useState("stats");
-  const [activeSection, setActiveSection] = useState<"exam" | "glossary">("exam");
+  const [activeSection, setActiveSection] = useState<"exam" | "glossary" | "sessions">("exam");
   const [linkQuestionId, setLinkQuestionId] = useState("");
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,7 +60,7 @@ export default function Admin() {
     extra: 'Extra'
   };
   // Stats tab needs full page scroll, Questions/Glossary need fixed viewport with internal scroll
-  const needsFixedHeight = activeSection === "glossary" || (activeSection === "exam" && activeTab === "questions");
+  const needsFixedHeight = activeSection === "glossary" || activeSection === "sessions" || (activeSection === "exam" && activeTab === "questions");
 
   return <AppLayout currentView="dashboard" onViewChange={handleViewChange} selectedTest={sidebarTest} onTestChange={setSidebarTest}>
       <div className={`flex-1 p-6 md:p-8 flex flex-col ${needsFixedHeight ? 'h-full overflow-hidden' : 'overflow-y-auto'}`}>
@@ -70,14 +71,14 @@ export default function Admin() {
           </div>
 
           {/* Section Toggle */}
-          <div className="flex gap-4 mb-6 shrink-0">
-            <button onClick={() => setActiveSection("exam")} className={`flex-1 p-4 rounded-lg border-2 transition-all text-left ${activeSection === "exam" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
+          <div className="flex gap-4 mb-6 shrink-0 flex-wrap">
+            <button onClick={() => setActiveSection("exam")} className={`flex-1 min-w-[200px] p-4 rounded-lg border-2 transition-all text-left ${activeSection === "exam" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
               <div className="font-semibold text-foreground mb-1">Exam Content</div>
               <p className="text-sm text-muted-foreground">
                 Statistics and questions for each license class
               </p>
             </button>
-            <button onClick={() => setActiveSection("glossary")} className={`flex-1 p-4 rounded-lg border-2 transition-all text-left ${activeSection === "glossary" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
+            <button onClick={() => setActiveSection("glossary")} className={`flex-1 min-w-[200px] p-4 rounded-lg border-2 transition-all text-left ${activeSection === "glossary" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
               <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
                 <BookOpen className="w-4 h-4" />
                 Glossary Terms
@@ -85,6 +86,15 @@ export default function Admin() {
               </div>
               <p className="text-sm text-muted-foreground">
                 Shared vocabulary terms across all license classes
+              </p>
+            </button>
+            <button onClick={() => setActiveSection("sessions")} className={`flex-1 min-w-[200px] p-4 rounded-lg border-2 transition-all text-left ${activeSection === "sessions" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
+                <MapPin className="w-4 h-4" />
+                Exam Sessions
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Import and manage VE exam session locations
               </p>
             </button>
           </div>
@@ -122,7 +132,7 @@ export default function Admin() {
               <TabsContent value="questions" className="flex-1 min-h-0 flex flex-col">
                 <AdminQuestions testType={adminExamType} highlightQuestionId={linkQuestionId} />
               </TabsContent>
-            </Tabs> : <div className="flex-1 flex flex-col min-h-0">
+            </Tabs> : activeSection === "glossary" ? <div className="flex-1 flex flex-col min-h-0">
               <div className="flex items-center gap-2 mb-6">
                 <BookOpen className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Glossary Terms</h2>
@@ -131,6 +141,12 @@ export default function Admin() {
                 </span>
               </div>
               <AdminGlossary />
+            </div> : <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-6">
+                <MapPin className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">Exam Sessions</h2>
+              </div>
+              <AdminExamSessions />
             </div>}
         </div>
       </div>

@@ -53,6 +53,78 @@ export type Database = {
           },
         ]
       }
+      exam_sessions: {
+        Row: {
+          address: string | null
+          address_2: string | null
+          address_3: string | null
+          city: string
+          created_at: string
+          email: string | null
+          exam_date: string
+          exam_time: string | null
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          phone: string | null
+          public_contact: string | null
+          sponsor: string | null
+          state: string
+          title: string | null
+          updated_at: string
+          vec: string | null
+          walk_ins_allowed: boolean | null
+          zip: string
+        }
+        Insert: {
+          address?: string | null
+          address_2?: string | null
+          address_3?: string | null
+          city: string
+          created_at?: string
+          email?: string | null
+          exam_date: string
+          exam_time?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          phone?: string | null
+          public_contact?: string | null
+          sponsor?: string | null
+          state: string
+          title?: string | null
+          updated_at?: string
+          vec?: string | null
+          walk_ins_allowed?: boolean | null
+          zip: string
+        }
+        Update: {
+          address?: string | null
+          address_2?: string | null
+          address_3?: string | null
+          city?: string
+          created_at?: string
+          email?: string | null
+          exam_date?: string
+          exam_time?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          phone?: string | null
+          public_contact?: string | null
+          sponsor?: string | null
+          state?: string
+          title?: string | null
+          updated_at?: string
+          vec?: string | null
+          walk_ins_allowed?: boolean | null
+          zip?: string
+        }
+        Relationships: []
+      }
       explanation_feedback: {
         Row: {
           created_at: string
@@ -394,6 +466,48 @@ export type Database = {
             foreignKeyName: "user_roles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_target_exam: {
+        Row: {
+          created_at: string
+          exam_session_id: string
+          id: string
+          study_intensity: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exam_session_id: string
+          id?: string
+          study_intensity?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exam_session_id?: string
+          id?: string
+          study_intensity?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_target_exam_exam_session_id_fkey"
+            columns: ["exam_session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_target_exam_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

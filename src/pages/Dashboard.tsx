@@ -20,6 +20,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Glossary } from '@/components/Glossary';
 import { GlossaryFlashcards } from '@/components/GlossaryFlashcards';
 import { WeeklyGoalsModal } from '@/components/WeeklyGoalsModal';
+import { ExamSessionSearch } from '@/components/ExamSessionSearch';
 import { TestType, testTypes } from '@/components/DashboardSidebar';
 export default function Dashboard() {
   const {
@@ -192,6 +193,9 @@ export default function Dashboard() {
     }
     if (currentView === 'glossary-flashcards') {
       return <GlossaryFlashcards onBack={() => setCurrentView('glossary')} />;
+    }
+    if (currentView === 'find-test-site') {
+      return <ExamSessionSearch />;
     }
     if (authLoading || testsLoading || attemptsLoading) {
       return <div className="min-h-screen bg-background flex items-center justify-center">
