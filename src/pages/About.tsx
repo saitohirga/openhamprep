@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { LandingNav } from "@/components/LandingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { cn } from "@/lib/utils";
-
 export default function About() {
   const values = [{
     icon: Unlock,
@@ -32,7 +31,6 @@ export default function About() {
     color: "text-success",
     bg: "bg-success/10"
   }];
-
   const principles = [{
     icon: Target,
     title: "More Than a Ticket",
@@ -46,7 +44,6 @@ export default function About() {
     title: "Ready for the Air",
     description: "When you pass using Open Ham Prep, you'll be confident making your first contact."
   }];
-
   return <div className="min-h-screen flex flex-col bg-background">
       <LandingNav />
 
@@ -120,7 +117,7 @@ export default function About() {
                   </p>
                   <p>
                     We started Open Ham Prep with a simple belief: <strong className="text-foreground">if you want 
-                    to become a ham, nothing should stand in your way</strong>. Not money. Not access. Not geography.
+                    to become a ham, nothing should stand in your way</strong>​
                   </p>
                   <p>
                     This isn't just about passing an exam. It's about preparing you to{" "}
