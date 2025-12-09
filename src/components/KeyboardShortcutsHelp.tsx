@@ -103,7 +103,7 @@ export function KeyboardShortcutsHelp({
           </TooltipContent>
         </Tooltip>
       )}
-      <DialogContent className="sm:max-w-md" aria-describedby="shortcuts-description">
+      <DialogContent className="sm:max-w-md z-[100]" aria-describedby="shortcuts-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="w-5 h-5" aria-hidden="true" />
