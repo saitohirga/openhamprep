@@ -120,6 +120,13 @@ export const useUserTargetExam = (userId?: string) => {
   });
 };
 
+// Map study intensity to weekly goals
+const INTENSITY_TO_GOALS = {
+  light: { questions_goal: 70, tests_goal: 1 },      // 10 questions/day * 7
+  moderate: { questions_goal: 175, tests_goal: 2 },  // 25 questions/day * 7
+  intensive: { questions_goal: 350, tests_goal: 3 }, // 50 questions/day * 7
+};
+
 export const useSaveTargetExam = () => {
   const queryClient = useQueryClient();
 
@@ -133,7 +140,7 @@ export const useSaveTargetExam = () => {
       examSessionId: string;
       studyIntensity: 'light' | 'moderate' | 'intensive';
     }) => {
-      // Upsert - replace existing target if any
+      // Upsert target exam
       const { data, error } = await supabase
         .from('user_target_exam')
         .upsert(
@@ -148,11 +155,31 @@ export const useSaveTargetExam = () => {
         .single();
 
       if (error) throw error;
+
+      // Also update weekly study goals based on intensity
+      const goals = INTENSITY_TO_GOALS[studyIntensity];
+      const { error: goalsError } = await supabase
+        .from('weekly_study_goals')
+        .upsert(
+          {
+            user_id: userId,
+            questions_goal: goals.questions_goal,
+            tests_goal: goals.tests_goal,
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (goalsError) {
+        console.error('Failed to update weekly goals:', goalsError);
+        // Don't throw - target exam was saved successfully
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-target-exam'] });
-      toast.success('Target exam date saved!');
+      queryClient.invalidateQueries({ queryKey: ['weekly-goals'] });
+      toast.success('Target exam date saved! Weekly goals updated.');
     },
     onError: (error) => {
       console.error('Error saving target exam:', error);
