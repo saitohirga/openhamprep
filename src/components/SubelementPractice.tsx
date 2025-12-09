@@ -6,7 +6,7 @@ import { useProgress } from "@/hooks/useProgress";
 import { usePostHog, ANALYTICS_EVENTS } from "@/hooks/usePostHog";
 import { useKeyboardShortcuts, KeyboardShortcut } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
-import { BookOpen, SkipForward, RotateCcw, Loader2, ChevronRight, CheckCircle, ArrowLeft, ChevronLeft } from "lucide-react";
+import { SkipForward, RotateCcw, Loader2, ChevronRight, CheckCircle, ArrowLeft, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TopicLanding } from "@/components/TopicLanding";
@@ -151,6 +151,83 @@ export function SubelementPractice({
     setAskedIds([]);
   };
 
+  // Current question from history
+  const canGoBack = historyIndex > 0;
+
+  const handleSelectAnswer = async (answer: 'A' | 'B' | 'C' | 'D') => {
+    if (showResult || !question) return;
+    
+    updateCurrentEntry({ selectedAnswer: answer, showResult: true });
+    
+    const isCorrect = answer === question.correctAnswer;
+    setStats(prev => ({
+      correct: prev.correct + (isCorrect ? 1 : 0),
+      total: prev.total + 1
+    }));
+    await saveRandomAttempt(question, answer);
+  };
+
+  const handleNextQuestion = () => {
+    if (!question) return;
+    // If we're not at the end of history, just move forward
+    if (historyIndex < questionHistory.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      return;
+    }
+    
+    // Otherwise, get a new question
+    const newAskedIds = [...askedIds, question.id];
+    setAskedIds(newAskedIds);
+    const nextQuestion = getRandomQuestion(newAskedIds);
+    if (nextQuestion) {
+      setQuestionHistory(prev => [...prev, { question: nextQuestion, selectedAnswer: null, showResult: false }]);
+      setHistoryIndex(prev => prev + 1);
+    }
+  };
+
+  const handleSkip = () => {
+    if (!question) return;
+    const newAskedIds = [...askedIds, question.id];
+    setAskedIds(newAskedIds);
+    const nextQuestion = getRandomQuestion(newAskedIds);
+    if (nextQuestion) {
+      setQuestionHistory(prev => [...prev, { question: nextQuestion, selectedAnswer: null, showResult: false }]);
+      setHistoryIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+    }
+  };
+
+  const handleReset = () => {
+    setAskedIds([]);
+    const firstQuestion = getRandomQuestion();
+    if (firstQuestion) {
+      setQuestionHistory([{ question: firstQuestion, selectedAnswer: null, showResult: false }]);
+      setHistoryIndex(0);
+    }
+    setStats({
+      correct: 0,
+      total: 0
+    });
+  };
+
+  // Keyboard shortcuts - must be called unconditionally before any returns
+  const shortcuts: KeyboardShortcut[] = [
+    { key: 'a', description: 'Select A', action: () => handleSelectAnswer('A'), disabled: showResult || !question },
+    { key: 'b', description: 'Select B', action: () => handleSelectAnswer('B'), disabled: showResult || !question },
+    { key: 'c', description: 'Select C', action: () => handleSelectAnswer('C'), disabled: showResult || !question },
+    { key: 'd', description: 'Select D', action: () => handleSelectAnswer('D'), disabled: showResult || !question },
+    { key: 'ArrowRight', description: 'Next', action: handleNextQuestion, disabled: !showResult },
+    { key: 'ArrowLeft', description: 'Previous', action: handlePreviousQuestion, disabled: !canGoBack },
+    { key: 's', description: 'Skip', action: handleSkip, disabled: showResult || !question },
+  ];
+
+  useKeyboardShortcuts(shortcuts, { enabled: topicView === 'practice' });
+
   if (isLoading) {
     return <div className="flex-1 bg-background flex items-center justify-center">
         <div className="text-center">
@@ -239,82 +316,9 @@ export function SubelementPractice({
       </div>;
   }
 
-  const handleSelectAnswer = async (answer: 'A' | 'B' | 'C' | 'D') => {
-    if (showResult) return;
-    
-    updateCurrentEntry({ selectedAnswer: answer, showResult: true });
-    
-    const isCorrect = answer === question.correctAnswer;
-    setStats(prev => ({
-      correct: prev.correct + (isCorrect ? 1 : 0),
-      total: prev.total + 1
-    }));
-    await saveRandomAttempt(question, answer);
-  };
-
-  const handleNextQuestion = () => {
-    // If we're not at the end of history, just move forward
-    if (historyIndex < questionHistory.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      return;
-    }
-    
-    // Otherwise, get a new question
-    const newAskedIds = [...askedIds, question.id];
-    setAskedIds(newAskedIds);
-    const nextQuestion = getRandomQuestion(newAskedIds);
-    if (nextQuestion) {
-      setQuestionHistory(prev => [...prev, { question: nextQuestion, selectedAnswer: null, showResult: false }]);
-      setHistoryIndex(prev => prev + 1);
-    }
-  };
-
-  const handleSkip = () => {
-    const newAskedIds = [...askedIds, question.id];
-    setAskedIds(newAskedIds);
-    const nextQuestion = getRandomQuestion(newAskedIds);
-    if (nextQuestion) {
-      setQuestionHistory(prev => [...prev, { question: nextQuestion, selectedAnswer: null, showResult: false }]);
-      setHistoryIndex(prev => prev + 1);
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-    }
-  };
-
-  const handleReset = () => {
-    setAskedIds([]);
-    const firstQuestion = getRandomQuestion();
-    if (firstQuestion) {
-      setQuestionHistory([{ question: firstQuestion, selectedAnswer: null, showResult: false }]);
-      setHistoryIndex(0);
-    }
-    setStats({
-      correct: 0,
-      total: 0
-    });
-  };
-
-  const canGoBack = historyIndex > 0;
   const isViewingHistory = historyIndex < questionHistory.length - 1;
   const percentage = stats.total > 0 ? Math.round(stats.correct / stats.total * 100) : 0;
   const progress = Math.round(askedIds.length / currentQuestions.length * 100);
-
-  // Keyboard shortcuts
-  const shortcuts: KeyboardShortcut[] = [
-    { key: 'a', description: 'Select A', action: () => !showResult && handleSelectAnswer('A'), disabled: showResult },
-    { key: 'b', description: 'Select B', action: () => !showResult && handleSelectAnswer('B'), disabled: showResult },
-    { key: 'c', description: 'Select C', action: () => !showResult && handleSelectAnswer('C'), disabled: showResult },
-    { key: 'd', description: 'Select D', action: () => !showResult && handleSelectAnswer('D'), disabled: showResult },
-    { key: 'ArrowRight', description: 'Next', action: handleNextQuestion, disabled: !showResult },
-    { key: 'ArrowLeft', description: 'Previous', action: handlePreviousQuestion, disabled: !canGoBack },
-    { key: 's', description: 'Skip', action: handleSkip, disabled: showResult },
-  ];
-
-  useKeyboardShortcuts(shortcuts, { enabled: topicView === 'practice' });
 
   return <div className="flex-1 bg-background py-8 px-4 pb-24 md:pb-8 overflow-y-auto">
       {/* Header */}

@@ -46,7 +46,6 @@ export function RandomPractice({
   const [bestStreak, setBestStreak] = useState(0);
   const [allTimeBestStreak, setAllTimeBestStreak] = useState(0);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
-  const [celebrationMilestone, setCelebrationMilestone] = useState(0);
   const [askedIds, setAskedIds] = useState<string[]>([]);
 
   // Session history for back navigation
@@ -186,7 +185,6 @@ export function RandomPractice({
 
         // Check for milestone celebration
         if (STREAK_MILESTONES.includes(newStreak)) {
-          setCelebrationMilestone(newStreak);
           setShowStreakCelebration(true);
 
           // Track streak milestone
@@ -355,7 +353,6 @@ export function RandomPractice({
                 <p className={`text-2xl font-mono font-bold ${streak > 0 ? 'text-primary' : 'text-muted-foreground'}`}>{streak}</p>
               </motion.div>
               <p className="text-xs text-muted-foreground">Streak</p>
-              {allTimeBestStreak > 0}
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleReset} className="gap-2">

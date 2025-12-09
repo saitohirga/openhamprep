@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/QuestionCard";
 import { TestResults } from "@/components/TestResults";
@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface PracticeTestProps {
   onBack: () => void;
   onTestStateChange?: (inProgress: boolean) => void;
@@ -95,6 +94,40 @@ export function PracticeTest({
       });
     }
   }, [timeRemaining, timerEnabled, isFinished, hasStarted, questions, answers, saveTestResult]);
+
+  // Handlers defined before useKeyboardShortcuts to avoid hooks ordering issues
+  const handleSelectAnswer = (answer: 'A' | 'B' | 'C' | 'D') => {
+    if (!currentQuestion) return;
+    setAnswers(prev => ({
+      ...prev,
+      [currentQuestion.id]: answer
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  // Keyboard shortcuts - must be called unconditionally before any returns
+  const practiceShortcuts: KeyboardShortcut[] = [
+    { key: 'a', description: 'Select A', action: () => handleSelectAnswer('A'), disabled: !hasStarted || isFinished },
+    { key: 'b', description: 'Select B', action: () => handleSelectAnswer('B'), disabled: !hasStarted || isFinished },
+    { key: 'c', description: 'Select C', action: () => handleSelectAnswer('C'), disabled: !hasStarted || isFinished },
+    { key: 'd', description: 'Select D', action: () => handleSelectAnswer('D'), disabled: !hasStarted || isFinished },
+    { key: 'ArrowRight', description: 'Next', action: handleNext, disabled: !hasStarted || isFinished || currentIndex >= questions.length - 1 },
+    { key: 'ArrowLeft', description: 'Previous', action: handlePrevious, disabled: !hasStarted || isFinished || currentIndex === 0 },
+  ];
+
+  useKeyboardShortcuts(practiceShortcuts, { enabled: hasStarted && !isFinished });
+
   const handleStartTest = () => {
     if (!allQuestions) return;
     const shuffledQuestions = shuffleArray([...allQuestions]).slice(0, 35);
@@ -102,6 +135,7 @@ export function PracticeTest({
     setHasStarted(true);
     capture(ANALYTICS_EVENTS.PRACTICE_TEST_STARTED, { question_count: 35 });
   };
+
   if (isLoading) {
     return <div className="flex-1 bg-background flex items-center justify-center">
         <div className="text-center">
@@ -196,22 +230,7 @@ export function PracticeTest({
         </div>
       </div>;
   }
-  const handleSelectAnswer = (answer: 'A' | 'B' | 'C' | 'D') => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion.id]: answer
-    }));
-  };
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
+
   const handleFinishInternal = async () => {
     setIsFinished(true);
     const result = await saveTestResult(questions, answers);
@@ -237,9 +256,11 @@ export function PracticeTest({
       toast.success('Test results saved!');
     }
   };
+
   const handleFinish = () => {
     handleFinishInternal();
   };
+
   const handleRetake = () => {
     setAnswers({});
     setCurrentIndex(0);
@@ -247,24 +268,13 @@ export function PracticeTest({
     setHasStarted(false);
     setTimeRemaining(120 * 60);
   };
+
   const handleTimerToggle = (enabled: boolean) => {
     setTimerEnabled(enabled);
     if (enabled) {
       setTimeRemaining(120 * 60);
     }
   };
-  // Keyboard shortcuts for practice test
-  const practiceShortcuts: KeyboardShortcut[] = [
-    { key: 'a', description: 'Select A', action: () => handleSelectAnswer('A') },
-    { key: 'b', description: 'Select B', action: () => handleSelectAnswer('B') },
-    { key: 'c', description: 'Select C', action: () => handleSelectAnswer('C') },
-    { key: 'd', description: 'Select D', action: () => handleSelectAnswer('D') },
-    { key: 'ArrowRight', description: 'Next', action: handleNext, disabled: currentIndex >= questions.length - 1 },
-    { key: 'ArrowLeft', description: 'Previous', action: handlePrevious, disabled: currentIndex === 0 },
-  ];
-
-  useKeyboardShortcuts(practiceShortcuts, { enabled: hasStarted && !isFinished });
-
   if (isFinished) {
     return <TestResults questions={questions} answers={answers} onRetake={handleRetake} onBack={onBack} />;
   }
