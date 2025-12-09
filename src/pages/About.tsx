@@ -416,10 +416,7 @@ export default function About() {
                 <h2 className="text-2xl md:text-3xl font-mono font-bold text-foreground mb-4">
                   Your Journey Starts Here
                 </h2>
-                <p className="text-muted-foreground mb-8 text-lg">
-                  Join thousands of aspiring hams who've used Open Ham Prep to earn their licenses. 
-                  The airwaves are waiting for you.
-                </p>
+                <p className="text-muted-foreground mb-8 text-lg">Join other aspiring hams who've used Open Ham Prep to earn their licenses. The airwaves are waiting for you.</p>
                 <Link to="/auth">
                   <Button size="lg" className="text-lg px-10 py-6 group">
                     Start Studying Free
