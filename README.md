@@ -195,11 +195,32 @@ Antenna,A device for transmitting or receiving radio waves
 
 ## Deployment
 
-The app uses Supabase as the backend infrastructure:
-- **Database**: PostgreSQL with Row Level Security
-- **Authentication**: Supabase Auth
-- **Edge Functions**: Serverless functions for backend logic
-- **Migrations**: Version-controlled database schema
+This project uses a **dual-deployment architecture**:
+
+### Marketing Site (`openhamprep.com`)
+- **Location:** `/marketing` directory
+- **Technology:** Static HTML, CSS, JavaScript
+- **Hosting:** GitHub Pages (free)
+- **Deployment:** Automatic on push to main via GitHub Actions
+- **Purpose:** Public-facing landing pages (home, about, FAQ, features)
+
+See [marketing/README.md](marketing/README.md) for details.
+
+### Application (`app.openhamprep.com`)
+- **Location:** Repository root
+- **Technology:** React SPA with Vite
+- **Hosting:** Cloudflare Pages (recommended, free)
+- **Backend:** Supabase (PostgreSQL, Auth, Edge Functions)
+- **Purpose:** Authenticated user application
+
+See [CLOUDFLARE_PAGES_SETUP.md](CLOUDFLARE_PAGES_SETUP.md) for deployment instructions.
+
+### Why Separate Deployments?
+
+1. **Cost Efficiency:** Static marketing on free GitHub Pages
+2. **Performance:** CDN-distributed static content loads instantly
+3. **Simplicity:** Marketing updates don't require React rebuilds
+4. **SEO:** Static HTML is better for search engines
 
 ### Migrating to Supabase
 

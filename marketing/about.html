@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - Open Ham Prep</title>
+  <meta name="description" content="Learn about Open Ham Prep - a free, open-source study platform built by ham radio enthusiasts for aspiring operators.">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
+
+  <!-- Navigation (same as index.html) -->
+  <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2 group">
+          <i data-lucide="radio" class="w-7 h-7 text-amber-600 dark:text-amber-400"></i>
+          <span class="font-mono font-bold text-lg">Open Ham Prep</span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-6">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors">About</a>
+          <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors text-sm font-medium">
+            Sign Up / Sign In
+          </a>
+        </div>
+
+        <div class="flex items-center gap-2 md:hidden">
+          <button id="theme-toggle-mobile" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <button id="mobile-menu-button" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i data-lucide="menu" class="w-5 h-5" id="menu-icon"></i>
+            <i data-lucide="x" class="w-5 h-5 hidden" id="close-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="mobile-menu" class="hidden md:hidden pb-4">
+        <div class="flex flex-col gap-3 pt-2">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors py-2">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors py-2">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-900 dark:text-gray-100 py-2">About</a>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors text-sm font-medium text-center">
+            Get Started
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-1">
+    <!-- Hero Section -->
+    <section class="py-20 md:py-28 px-4 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-900/10">
+      <div class="max-w-4xl mx-auto text-center">
+        <div class="flex items-center justify-center gap-3 mb-8">
+          <i data-lucide="radio" class="w-16 h-16 text-amber-600 dark:text-amber-400"></i>
+        </div>
+        <h1 class="text-4xl md:text-6xl font-mono font-bold mb-6">
+          By Hams. <span class="text-amber-600 dark:text-amber-400">For Hams.</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          We believe everyone deserves access to amateur radio. That's why we built a
+          free, open-source study platform—to open the door for the next generation of operators.
+        </p>
+      </div>
+    </section>
+
+    <!-- Mission Statement -->
+    <section class="py-16 md:py-20 px-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="border-l-4 border-amber-600 dark:border-amber-400 pl-8">
+          <h2 class="text-3xl md:text-4xl font-mono font-bold mb-6">
+            Our Mission
+          </h2>
+          <div class="space-y-6 text-lg text-gray-600 dark:text-gray-400">
+            <p>
+              Amateur radio has always been about <strong class="text-gray-900 dark:text-gray-100">open access</strong>—anyone with a license and a radio can communicate around the world. But too often, the path to getting licensed feels closed off: expensive study materials or outdated resources.
+            </p>
+            <p>
+              We started Open Ham Prep with a simple belief: <strong class="text-gray-900 dark:text-gray-100">if you want
+              to become a ham, nothing should stand in your way.</strong>
+            </p>
+            <p>
+              This isn't just about passing an exam. It's about preparing you to{" "}
+              <strong class="text-gray-900 dark:text-gray-100">love this hobby</strong>—to feel the thrill of your first
+              contact, to understand why radio propagation is magical, and to join a global community of
+              makers, experimenters, and communicators.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Values Grid -->
+    <section class="py-16 md:py-20 px-4 bg-gray-100 dark:bg-gray-800/30">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-mono font-bold mb-4">
+            What We Stand For
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            These aren't just words—they're the principles that guide every decision we make.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Open Access -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="unlock" class="w-6 h-6 text-amber-600 dark:text-amber-400"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold mb-2">Open Access</h3>
+                <p class="text-gray-600 dark:text-gray-400">No paywalls, no premium tiers, no hidden costs. Quality education should be available to everyone.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Built With Passion -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="heart" class="w-6 h-6 text-red-600 dark:text-red-400"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold mb-2">Built With Passion</h3>
+                <p class="text-gray-600 dark:text-gray-400">Created by amateur radio enthusiasts who remember the excitement of their first QSO.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Community First -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="users" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold mb-2">Community First</h3>
+                <p class="text-gray-600 dark:text-gray-400">We're not building a product—we're growing a community of operators who help each other.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Open Source -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/30 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="git-branch" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold mb-2">Open Source</h3>
+                <p class="text-gray-600 dark:text-gray-400">Transparent, auditable, and community-driven. Contribute, fork, or learn from the code.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Open Source Section -->
+    <section class="py-16 md:py-20 px-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 border-2 border-amber-500/20 rounded-2xl p-8 md:p-10">
+          <div class="flex flex-col md:flex-row items-start gap-6">
+            <div class="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="code" class="w-8 h-8 text-teal-600 dark:text-teal-400"></i>
+            </div>
+            <div class="flex-1">
+              <h2 class="text-2xl md:text-3xl font-mono font-bold mb-4">
+                Open Source, Open Future
+              </h2>
+              <div class="space-y-4 text-gray-600 dark:text-gray-400">
+                <p>
+                  Open Ham Prep is <strong class="text-gray-900 dark:text-gray-100">100% open source</strong>.
+                  Our code is public, our development is transparent, and our community is welcome to
+                  contribute. This isn't just about building software—it's about building trust.
+                </p>
+                <p>When you use open-source software, you know exactly what you're getting. No surprise monetization, no rug pulls. Just honest tools built by people who care about the same things you do.</p>
+                <p class="text-gray-900 dark:text-gray-100 font-medium">
+                  Want to contribute? Found a bug? Have an idea?{" "}
+                  <a href="https://github.com/sonyccd/openhamprep" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1">
+                    Check out our GitHub repo
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                  </a>
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-3 mt-6">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-sm">
+                  <i data-lucide="globe" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                  Free Forever
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-sm">
+                  <i data-lucide="git-branch" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
+                  Community Driven
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Born in North Carolina Section -->
+    <section class="py-16 md:py-20 px-4 bg-gray-100 dark:bg-gray-800/30">
+      <div class="max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-sm font-medium mb-4">
+              <i data-lucide="map-pin" class="w-4 h-4"></i>
+              Our Story
+            </div>
+            <h2 class="text-3xl md:text-4xl font-mono font-bold mb-4">
+              Born in North Carolina
+            </h2>
+            <div class="space-y-4 text-gray-600 dark:text-gray-400">
+              <p>This project started when a group of ham radio enthusiasts in North Carolina realized that quality test prep resources were either outdated, locked behind paywalls, or just frustrating to use. We believed that if amateur radio is about open communication, then the path to getting licensed should be just as open.</p>
+              <p>
+                What began as a local effort to help friends and neighbors get their licenses has grown
+                into an open-source project serving aspiring hams around the world. We're not a company
+                selling a product—we're radio operators who remember what it was like to study for our
+                first exam, and we want to make that journey easier for everyone who comes after us.
+              </p>
+            </div>
+          </div>
+          <div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Born in <span class="text-amber-600 dark:text-amber-400 font-medium">North Carolina</span>
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Serving hams worldwide
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 md:py-20 px-4">
+      <div class="max-w-2xl mx-auto text-center">
+        <div class="bg-white dark:bg-gray-800 border-2 border-amber-500/30 rounded-2xl p-8 md:p-12">
+          <i data-lucide="radio" class="w-14 h-14 text-amber-600 dark:text-amber-400 mx-auto mb-6"></i>
+          <h2 class="text-2xl md:text-3xl font-mono font-bold mb-4">
+            Your Journey Starts Here
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">Join other aspiring hams who've used Open Ham Prep to earn their licenses. The airwaves are waiting for you.</p>
+          <a href="https://app.openhamprep.com/auth" class="inline-flex items-center gap-2 px-10 py-4 bg-amber-600 dark:bg-amber-500 text-white text-lg rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors group">
+            Start Studying Free
+            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-8 px-4 border-t border-gray-200 dark:border-gray-800">
+    <div class="max-w-6xl mx-auto text-center text-gray-600 dark:text-gray-400 space-y-3">
+      <p class="text-sm">Official FCC question pools • Free to use • Open Source</p>
+      <p class="text-sm">Made with ❤️ in North Carolina</p>
+      <p class="text-xs mt-4">© 2025 Brad Bazemore. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    lucide.createIcons();
+
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      menuIcon.classList.toggle('hidden');
+      closeIcon.classList.toggle('hidden');
+    });
+  </script>
+</body>
+</html>

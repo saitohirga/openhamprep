@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - Open Ham Prep</title>
+  <meta name="description" content="Frequently asked questions about ham radio licensing and using Open Ham Prep.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2">
+          <i data-lucide="radio" class="w-7 h-7 text-amber-600 dark:text-amber-400"></i>
+          <span class="font-mono font-bold text-lg">Open Ham Prep</span>
+        </a>
+        <div class="hidden md:flex items-center gap-6">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-900 dark:text-gray-100">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">About</a>
+          <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 text-sm font-medium">Sign Up / Sign In</a>
+        </div>
+        <div class="flex items-center gap-2 md:hidden">
+          <button id="theme-toggle-mobile" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <button id="mobile-menu-button" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i data-lucide="menu" class="w-5 h-5" id="menu-icon"></i>
+            <i data-lucide="x" class="w-5 h-5 hidden" id="close-icon"></i>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-menu" class="hidden md:hidden pb-4">
+        <div class="flex flex-col gap-3 pt-2">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 py-2">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-900 dark:text-gray-100 py-2">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 py-2">About</a>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg text-sm font-medium text-center">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero -->
+    <section class="py-16 md:py-20 px-4 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-900/10">
+      <div class="max-w-4xl mx-auto text-center">
+        <i data-lucide="help-circle" class="w-16 h-16 text-amber-600 dark:text-amber-400 mx-auto mb-6"></i>
+        <h1 class="text-4xl md:text-5xl font-mono font-bold mb-6">Frequently Asked Questions</h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Everything you need to know about ham radio licensing and using Open Ham Prep.
+        </p>
+      </div>
+    </section>
+
+    <!-- FAQ Content -->
+    <section class="py-12 md:py-16 px-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="space-y-4">
+          <!-- FAQ Item -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button class="faq-button w-full flex items-center justify-between p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+              <span class="font-medium pr-4">Is Open Ham Prep really free?</span>
+              <i data-lucide="chevron-down" class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 transition-transform"></i>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600 dark:text-gray-400">
+              Yes, completely free with no hidden costs, subscriptions, or premium features locked behind a paywall. This app was built by ham radio enthusiasts in North Carolina to help people get licensed.
+            </div>
+          </div>
+
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button class="faq-button w-full flex items-center justify-between p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+              <span class="font-medium pr-4">What are the different license classes?</span>
+              <i data-lucide="chevron-down" class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 transition-transform"></i>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600 dark:text-gray-400">
+              There are three license classes: Technician (entry-level), General (intermediate), and Amateur Extra (highest class). Each requires passing an exam, and you must hold the previous class to upgrade.
+            </div>
+          </div>
+
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button class="faq-button w-full flex items-center justify-between p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+              <span class="font-medium pr-4">Are the questions the actual exam questions?</span>
+              <i data-lucide="chevron-down" class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 transition-transform"></i>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600 dark:text-gray-400">
+              Yes! We use the official FCC question pools, which are the exact questions used on the real exam. The FCC publishes these pools publicly, and all exam questions come directly from them.
+            </div>
+          </div>
+
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <button class="faq-button w-full flex items-center justify-between p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+              <span class="font-medium pr-4">How long does it take to prepare for the Technician exam?</span>
+              <i data-lucide="chevron-down" class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 transition-transform"></i>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600 dark:text-gray-400">
+              Most people can prepare in 1-4 weeks with regular study. If you study 30-60 minutes daily, you should be ready within 2-3 weeks. Some people with technical backgrounds pass after just a few days.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-16 px-4">
+      <div class="max-w-2xl mx-auto text-center">
+        <div class="bg-white dark:bg-gray-800 border-2 border-amber-500/20 rounded-2xl p-8 md:p-12">
+          <i data-lucide="radio" class="w-12 h-12 text-amber-600 dark:text-amber-400 mx-auto mb-4"></i>
+          <h2 class="text-2xl md:text-3xl font-mono font-bold mb-4">Ready to Get Your License?</h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">Start studying today with our free practice tests and study tools.</p>
+          <a href="https://app.openhamprep.com/auth" class="inline-flex items-center gap-2 px-8 py-4 bg-amber-600 dark:bg-amber-500 text-white text-lg rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 group">
+            Get Started Free
+            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-8 px-4 border-t border-gray-200 dark:border-gray-800">
+    <div class="max-w-6xl mx-auto text-center text-gray-600 dark:text-gray-400 space-y-3">
+      <p class="text-sm">Official FCC question pools • Free to use • Open Source</p>
+      <p class="text-sm">Made with ❤️ in North Carolina</p>
+      <p class="text-xs mt-4">© 2025 Brad Bazemore. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    lucide.createIcons();
+
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      menuIcon.classList.toggle('hidden');
+      closeIcon.classList.toggle('hidden');
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const answer = button.nextElementSibling;
+        const icon = button.querySelector('[data-lucide="chevron-down"]');
+        answer.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Ham Prep - Your Path to Amateur Radio License</title>
+  <meta name="description" content="Prepare for your Technician, General, or Amateur Extra license exam with our free, comprehensive study tools. Built by ham radio enthusiasts for aspiring operators.">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 group">
+          <i data-lucide="radio" class="w-7 h-7 text-amber-600 dark:text-amber-400"></i>
+          <span class="font-mono font-bold text-lg">Open Ham Prep</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center gap-6">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">About</a>
+          <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors text-sm font-medium">
+            Sign Up / Sign In
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="flex items-center gap-2 md:hidden">
+          <button id="theme-toggle-mobile" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
+          <button id="mobile-menu-button" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <i data-lucide="menu" class="w-5 h-5" id="menu-icon"></i>
+            <i data-lucide="x" class="w-5 h-5 hidden" id="close-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="hidden md:hidden pb-4">
+        <div class="flex flex-col gap-3 pt-2">
+          <a href="/features.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors py-2">Features</a>
+          <a href="/faq.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors py-2">FAQ</a>
+          <a href="/about.html" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors py-2">About</a>
+          <a href="https://app.openhamprep.com/auth" class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors text-sm font-medium text-center">
+            Get Started
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Hero Section -->
+    <section class="flex flex-col items-center justify-center px-4 pt-12 pb-12 md:pt-20 md:pb-16 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-900/10">
+      <div class="text-center max-w-3xl">
+        <div class="flex items-center justify-center gap-3 mb-6">
+          <i data-lucide="radio" class="w-12 h-12 text-amber-600 dark:text-amber-400"></i>
+          <h1 class="text-4xl md:text-6xl font-mono font-bold">
+            <span class="text-amber-600 dark:text-amber-400">Open Ham</span> Prep
+          </h1>
+        </div>
+        <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-4">
+          Your path to becoming a licensed Amateur Radio operator
+        </p>
+        <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+          Prepare for your Technician, General, or Amateur Extra license exam with our comprehensive study tools.
+          Built by ham radio enthusiasts in North Carolina.
+        </p>
+
+        <!-- CTA Button -->
+        <a href="https://app.openhamprep.com/auth" class="inline-flex items-center gap-2 px-8 py-4 bg-amber-600 dark:bg-amber-500 text-white text-lg rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors group">
+          Start Studying For Free
+          <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+        </a>
+      </div>
+    </section>
+
+    <!-- Benefits Bar -->
+    <section class="bg-gray-100 dark:bg-gray-800/50 border-y border-gray-200 dark:border-gray-800 py-6">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="flex flex-wrap justify-center gap-4 md:gap-8">
+          <div class="flex items-center gap-2 text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0"></i>
+            <span>Free to use - no hidden costs</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0"></i>
+            <span>Study anywhere, anytime</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0"></i>
+            <span>Track your progress across sessions</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0"></i>
+            <span>Built by hams, for hams</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 px-4">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-mono font-bold mb-4">
+            Everything You Need to Pass
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Our study tools are designed to help you learn efficiently and pass your exam on the first try.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Feature: Official Question Pools -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="book-open" class="w-6 h-6 text-amber-600 dark:text-amber-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Official Question Pools</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Study from the actual FCC question pools used on the real exam. No surprises on test day.</p>
+          </div>
+
+          <!-- Feature: Practice Tests -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="target" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Practice Tests</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Take 35-question practice tests that mirror the real exam format and passing requirements.</p>
+          </div>
+
+          <!-- Feature: Find Exam Sessions -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="map-pin" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Find Exam Sessions</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Search for exam sessions near you by location or date. Set a target exam and get a personalized study plan.</p>
+          </div>
+
+          <!-- Feature: Random Practice -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="zap" class="w-6 h-6 text-amber-600 dark:text-amber-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Random Practice</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Drill through unlimited random questions to build confidence and reinforce learning.</p>
+          </div>
+
+          <!-- Feature: Progress Tracking -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="bar-chart-3" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Progress Tracking</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Monitor your improvement over time. See which topics need more attention.</p>
+          </div>
+
+          <!-- Feature: Weak Area Review -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
+            <div class="w-12 h-12 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-teal-600 dark:text-teal-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Weak Area Review</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Focus your study time on questions you've missed. Master your problem areas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="py-16 px-4 bg-gray-100 dark:bg-gray-800/30">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-4xl font-mono font-bold mb-4">How It Works</h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="w-14 h-14 rounded-full bg-amber-600 dark:bg-amber-500 text-white flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              1
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Create Account</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Sign up for free in seconds. No credit card required.</p>
+          </div>
+
+          <div class="text-center">
+            <div class="w-14 h-14 rounded-full bg-amber-600 dark:bg-amber-500 text-white flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              2
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Study & Practice</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Take practice tests and drill through questions at your own pace.</p>
+          </div>
+
+          <div class="text-center">
+            <div class="w-14 h-14 rounded-full bg-amber-600 dark:bg-amber-500 text-white flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              3
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Pass Your Exam</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Show up confident and earn your amateur radio license!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="py-16 px-4">
+      <div class="max-w-2xl mx-auto text-center">
+        <div class="bg-white dark:bg-gray-800 border-2 border-amber-500/20 rounded-2xl p-8 md:p-12">
+          <i data-lucide="radio" class="w-12 h-12 text-amber-600 dark:text-amber-400 mx-auto mb-4"></i>
+          <h2 class="text-2xl md:text-3xl font-mono font-bold mb-4">Ready to Get Licensed?</h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">Join other aspiring hams who have used Open Ham Prep to pass their exams. Your amateur radio journey starts here.</p>
+          <a href="https://app.openhamprep.com/auth" class="inline-flex items-center gap-2 px-8 py-4 bg-amber-600 dark:bg-amber-500 text-white text-lg rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors group">
+            Get Started Now
+            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-8 px-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
+    <div class="max-w-6xl mx-auto text-center text-gray-600 dark:text-gray-400 space-y-3">
+      <p class="text-sm">Official FCC question pools • Free to use • Open Source</p>
+      <p class="text-sm">Made with ❤️ in North Carolina</p>
+      <p class="text-xs mt-4">© 2025 Brad Bazemore. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      menuIcon.classList.toggle('hidden');
+      closeIcon.classList.toggle('hidden');
+    });
+  </script>
+</body>
+</html>
