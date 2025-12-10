@@ -33,6 +33,51 @@ export function WeakQuestionsReview({
   });
   const [completed, setCompleted] = useState(false);
   const currentQuestion = weakQuestions[currentIndex];
+
+  const handleSelectAnswer = useCallback(async (answer: 'A' | 'B' | 'C' | 'D') => {
+    if (showResult || !currentQuestion) return;
+    setSelectedAnswer(answer);
+    setShowResult(true);
+    const isCorrect = answer === currentQuestion.correctAnswer;
+    setStats(prev => ({
+      correct: prev.correct + (isCorrect ? 1 : 0),
+      total: prev.total + 1
+    }));
+    await saveRandomAttempt(currentQuestion, answer);
+  }, [showResult, currentQuestion, saveRandomAttempt]);
+
+  const handleNext = useCallback(() => {
+    if (currentIndex < weakQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+      setShowResult(false);
+    } else {
+      setCompleted(true);
+    }
+  }, [currentIndex, weakQuestions.length]);
+
+  const handleSkip = useCallback(() => {
+    if (currentIndex < weakQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+      setShowResult(false);
+    } else {
+      setCompleted(true);
+    }
+  }, [currentIndex, weakQuestions.length]);
+
+  // Keyboard shortcuts - must be called before any early returns
+  const shortcuts: KeyboardShortcut[] = [
+    { key: 'a', description: 'Select A', action: () => handleSelectAnswer('A'), disabled: showResult || isLoading || completed },
+    { key: 'b', description: 'Select B', action: () => handleSelectAnswer('B'), disabled: showResult || isLoading || completed },
+    { key: 'c', description: 'Select C', action: () => handleSelectAnswer('C'), disabled: showResult || isLoading || completed },
+    { key: 'd', description: 'Select D', action: () => handleSelectAnswer('D'), disabled: showResult || isLoading || completed },
+    { key: 'ArrowRight', description: 'Next', action: handleNext, disabled: !showResult || isLoading || completed },
+    { key: 's', description: 'Skip', action: handleSkip, disabled: showResult || isLoading || completed },
+  ];
+
+  useKeyboardShortcuts(shortcuts, { enabled: !isLoading && !completed && weakQuestions.length > 0 });
+
   if (isLoading) {
     return <div className="flex-1 bg-background flex items-center justify-center">
         <div className="text-center">
@@ -87,46 +132,6 @@ export function WeakQuestionsReview({
         </motion.div>
       </div>;
   }
-  const handleSelectAnswer = async (answer: 'A' | 'B' | 'C' | 'D') => {
-    if (showResult) return;
-    setSelectedAnswer(answer);
-    setShowResult(true);
-    const isCorrect = answer === currentQuestion.correctAnswer;
-    setStats(prev => ({
-      correct: prev.correct + (isCorrect ? 1 : 0),
-      total: prev.total + 1
-    }));
-    await saveRandomAttempt(currentQuestion, answer);
-  };
-  const handleNext = () => {
-    if (currentIndex < weakQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelectedAnswer(null);
-      setShowResult(false);
-    } else {
-      setCompleted(true);
-    }
-  };
-  const handleSkip = () => {
-    if (currentIndex < weakQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelectedAnswer(null);
-      setShowResult(false);
-    } else {
-      setCompleted(true);
-    }
-  };
-  // Keyboard shortcuts
-  const shortcuts: KeyboardShortcut[] = [
-    { key: 'a', description: 'Select A', action: () => !showResult && handleSelectAnswer('A'), disabled: showResult },
-    { key: 'b', description: 'Select B', action: () => !showResult && handleSelectAnswer('B'), disabled: showResult },
-    { key: 'c', description: 'Select C', action: () => !showResult && handleSelectAnswer('C'), disabled: showResult },
-    { key: 'd', description: 'Select D', action: () => !showResult && handleSelectAnswer('D'), disabled: showResult },
-    { key: 'ArrowRight', description: 'Next', action: handleNext, disabled: !showResult },
-    { key: 's', description: 'Skip', action: handleSkip, disabled: showResult },
-  ];
-
-  useKeyboardShortcuts(shortcuts);
 
   const percentage = stats.total > 0 ? Math.round(stats.correct / stats.total * 100) : 0;
   return <div className="flex-1 bg-background py-8 px-4 pb-24 md:pb-8 overflow-y-auto">
