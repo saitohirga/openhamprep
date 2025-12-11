@@ -69,32 +69,58 @@ Deno.serve(async (req) => {
 
     const credentials = { email: TEST_EMAIL, password: testPassword }
 
+    // Check for force=true query param to delete and recreate
+    const url = new URL(req.url)
+    const forceRecreate = url.searchParams.get('force') === 'true'
+
     // Check if user already exists
     const { data: existingUsers } = await adminClient.auth.admin.listUsers()
     const existingUser = existingUsers?.users?.find(u => u.email === TEST_EMAIL)
 
     if (existingUser) {
-      // Update password to match current branch name
-      const { error: updateError } = await adminClient.auth.admin.updateUserById(
-        existingUser.id,
-        { password: testPassword }
-      )
-
-      if (updateError) {
-        console.error('Failed to update test user password:', updateError.message)
+      if (forceRecreate) {
+        // Delete existing user to recreate with correct password
+        console.log('Force recreate: deleting existing user')
+        const { error: deleteError } = await adminClient.auth.admin.deleteUser(existingUser.id)
+        if (deleteError) {
+          console.error('Failed to delete user:', deleteError.message)
+          return new Response(
+            JSON.stringify({ error: 'Failed to delete existing user: ' + deleteError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        // Continue to create new user below
       } else {
-        console.log('Test user password updated | Password:', testPassword)
-      }
+        // Update password to match current branch name
+        const { error: updateError } = await adminClient.auth.admin.updateUserById(
+          existingUser.id,
+          { password: testPassword }
+        )
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Test user already exists (password updated)',
-          credentials,
-          branchName
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        if (updateError) {
+          console.error('Failed to update test user password:', updateError.message)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Failed to update password: ' + updateError.message,
+              hint: 'Try with ?force=true to delete and recreate the user'
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        console.log('Test user password updated | Password:', testPassword)
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Test user already exists (password updated)',
+            credentials,
+            branchName
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     // Create test user
