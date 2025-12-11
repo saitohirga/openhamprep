@@ -4,6 +4,11 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  // Provide test env vars for Supabase client initialization
+  define: {
+    'import.meta.env.NEXT_PUBLIC_SUPABASE_URL': JSON.stringify('http://localhost:54321'),
+    'import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY': JSON.stringify('test-anon-key'),
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

@@ -1,7 +1,26 @@
 project_id = "sahfeuvmbnmqusjctrtw"
 
+[auth]
+# Allow Vercel preview URLs and localhost for development
+site_url = "https://openhamprep.app"
+additional_redirect_urls = [
+  "http://localhost:8080",
+  "http://localhost:8080/**",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8080/**",
+  "https://openhamprep.app",
+  "https://openhamprep.app/**",
+  "https://openhamprep-brad-bazemores-projects.vercel.app",
+  "https://openhamprep-brad-bazemores-projects.vercel.app/**",
+  "https://openhamprep-*-brad-bazemores-projects.vercel.app",
+  "https://openhamprep-*-brad-bazemores-projects.vercel.app/**"
+]
+
 [functions.seed-questions]
 verify_jwt = false
 
 [functions.manage-question-links]
+verify_jwt = false
+
+[functions.seed-test-user]
 verify_jwt = false

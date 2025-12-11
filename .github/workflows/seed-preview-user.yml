@@ -1,0 +1,144 @@
+name: Seed Preview Test User
+
+# Trigger when Supabase deployment succeeds
+on:
+  deployment_status:
+
+jobs:
+  seed-test-user:
+    # Only run for Supabase deployments (URL contains supabase.co)
+    if: |
+      github.event.deployment_status.state == 'success' &&
+      contains(github.event.deployment_status.environment_url, 'supabase.co')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract Supabase URL
+        id: extract-url
+        run: |
+          SUPABASE_URL="${{ github.event.deployment_status.environment_url }}"
+          BRANCH="${{ github.event.deployment.ref }}"
+
+          echo "Supabase URL: $SUPABASE_URL"
+          echo "Branch: $BRANCH"
+
+          echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Wait for Supabase to be fully ready
+        run: |
+          echo "Waiting 30 seconds for Supabase services to initialize..."
+          sleep 30
+
+      - name: Seed test user
+        run: |
+          SUPABASE_URL="${{ steps.extract-url.outputs.supabase_url }}"
+          FUNCTION_URL="${SUPABASE_URL}/functions/v1/seed-test-user"
+
+          echo "Calling seed-test-user function at: $FUNCTION_URL"
+
+          # Retry up to 3 times with backoff
+          for i in 1 2 3; do
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$FUNCTION_URL" \
+              -H "Content-Type: application/json" \
+              --max-time 30)
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            echo "Attempt $i - HTTP Status: $HTTP_CODE"
+            echo "Response: $BODY"
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Test user seeded successfully!"
+
+              # Extract and display credentials
+              EMAIL=$(echo "$BODY" | jq -r '.credentials.email // "test@example.com"')
+              PASSWORD=$(echo "$BODY" | jq -r '.credentials.password // "unknown"')
+              BRANCH=$(echo "$BODY" | jq -r '.branchName // "unknown"')
+
+              echo ""
+              echo "=================================="
+              echo "Preview Test User Credentials"
+              echo "=================================="
+              echo "Email: $EMAIL"
+              echo "Password: $PASSWORD"
+              echo "Branch: $BRANCH"
+              echo "=================================="
+              exit 0
+            fi
+
+            if [ "$HTTP_CODE" = "403" ]; then
+              echo "Function blocked (production environment), skipping."
+              exit 0
+            fi
+
+            echo "Retrying in $((i * 10)) seconds..."
+            sleep $((i * 10))
+          done
+
+          echo "Failed to seed test user after 3 attempts"
+          exit 1
+
+      - name: Add PR comment with credentials
+        if: github.event.deployment.ref != 'main'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            // Find the PR associated with this deployment
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.payload.deployment.ref}`,
+              state: 'open'
+            });
+
+            if (prs.length === 0) {
+              console.log('No open PR found for this deployment');
+              return;
+            }
+
+            const pr = prs[0];
+            const branch = context.payload.deployment.ref;
+
+            const comment = `## 🧪 Preview Test User Created
+
+            **Login credentials for this preview:**
+            - **Email:** \`test@example.com\`
+            - **Password:** \`preview-${branch}\`
+
+            > These credentials only work on this preview branch's Supabase instance.`;
+
+            // Check if we already commented
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number
+            });
+
+            const existingComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('Preview Test User Created')
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+              console.log('Updated existing PR comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: comment
+              });
+              console.log('Created new PR comment');
+            }
