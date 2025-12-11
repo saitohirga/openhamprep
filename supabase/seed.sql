@@ -10,7 +10,10 @@
 --
 -- Credentials:
 --   Email: test@example.com
---   Password: testuser123
+--   Password: preview-<branch-name>
+--
+-- Example: For branch "feat/my-feature", password is "preview-feat/my-feature"
+-- The Edge Function response will include the actual password.
 --
 -- NOTE: Direct SQL inserts into auth.users are not supported by Supabase.
 --       The Edge Function uses the Admin API instead.
@@ -630,7 +633,7 @@ BEGIN
   RAISE NOTICE '========================================';
   RAISE NOTICE 'Preview Branch Seeded Successfully!';
   RAISE NOTICE '========================================';
-  RAISE NOTICE 'Test User: Call seed-test-user Edge Function first!';
+  RAISE NOTICE 'Test User: Call seed-test-user Edge Function (password: preview-<branch>)';
   RAISE NOTICE '';
   RAISE NOTICE 'Questions: % (35+ per license type)', (SELECT COUNT(*) FROM public.questions);
   RAISE NOTICE '  - Technician: %', (SELECT COUNT(*) FROM public.questions WHERE id LIKE 'T%');
