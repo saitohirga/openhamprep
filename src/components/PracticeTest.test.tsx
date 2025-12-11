@@ -30,12 +30,14 @@ const mockQuestions = [
   },
 ];
 
+const mockQuestionsHook = vi.fn(() => ({
+  data: mockQuestions,
+  isLoading: false,
+  error: null,
+}));
+
 vi.mock('@/hooks/useQuestions', () => ({
-  useQuestions: () => ({
-    data: mockQuestions,
-    isLoading: false,
-    error: null,
-  }),
+  useQuestions: () => mockQuestionsHook(),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -297,29 +299,16 @@ describe('PracticeTest', () => {
 });
 
 describe('PracticeTest Loading State', () => {
-  it('shows loading state when questions are loading', async () => {
-    vi.doMock('@/hooks/useQuestions', () => ({
-      useQuestions: () => ({
-        data: null,
-        isLoading: true,
-        error: null,
-      }),
-    }));
-    
-    const { PracticeTest: LoadingPracticeTest } = await import('./PracticeTest');
-    
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
+  it('shows loading state when questions are loading', () => {
+    // Override the mock to return loading state
+    mockQuestionsHook.mockReturnValueOnce({
+      data: undefined,
+      isLoading: true,
+      error: null,
     });
-    
-    render(
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <LoadingPracticeTest onBack={vi.fn()} />
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-    
+
+    renderPracticeTest();
+
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 });

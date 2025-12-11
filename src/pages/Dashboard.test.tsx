@@ -21,11 +21,13 @@ vi.mock('react-router-dom', async () => {
 
 // Mock useAuth
 const mockUser = { id: 'test-user-id', email: 'test@example.com' };
+const mockAuthHook = vi.fn(() => ({
+  user: mockUser,
+  loading: false,
+}));
+
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: mockUser,
-    loading: false,
-  }),
+  useAuth: () => mockAuthHook(),
 }));
 
 // Mock useBookmarks
@@ -44,13 +46,15 @@ vi.mock('@/hooks/useBookmarks', () => ({
 // Mock useAppNavigation
 const mockSetCurrentView = vi.fn();
 const mockSetReviewingTestId = vi.fn();
+const mockAppNavigation = vi.fn(() => ({
+  currentView: 'dashboard',
+  setCurrentView: mockSetCurrentView,
+  reviewingTestId: null,
+  setReviewingTestId: mockSetReviewingTestId,
+}));
+
 vi.mock('@/hooks/useAppNavigation', () => ({
-  useAppNavigation: () => ({
-    currentView: 'dashboard',
-    setCurrentView: mockSetCurrentView,
-    reviewingTestId: null,
-    setReviewingTestId: mockSetReviewingTestId,
-  }),
+  useAppNavigation: () => mockAppNavigation(),
 }));
 
 // Mock framer-motion
@@ -201,27 +205,13 @@ describe('Dashboard', () => {
   describe('Authentication Redirect', () => {
     it('redirects to home when user is not authenticated', async () => {
       // Override useAuth mock for this test
-      vi.doMock('@/hooks/useAuth', () => ({
-        useAuth: () => ({
-          user: null,
-          loading: false,
-        }),
-      }));
-      
-      const DashboardModule = await import('./Dashboard');
-      const UnauthDashboard = DashboardModule.default;
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter>
-            <TooltipProvider>
-              <UnauthDashboard />
-            </TooltipProvider>
-          </MemoryRouter>
-        </QueryClientProvider>
-      );
-      
+      mockAuthHook.mockReturnValueOnce({
+        user: null,
+        loading: false,
+      });
+
+      renderDashboard();
+
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/');
       });
@@ -235,168 +225,90 @@ describe('Dashboard Views', () => {
   });
 
   it('renders practice-test view when currentView is practice-test', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'practice-test',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardPractice } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardPractice />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'practice-test',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('practice-test')).toBeInTheDocument();
     });
   });
 
   it('renders random-practice view when currentView is random-practice', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'random-practice',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardRandom } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardRandom />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'random-practice',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('random-practice')).toBeInTheDocument();
     });
   });
 
   it('renders bookmarks view when currentView is bookmarks', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'bookmarks',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardBookmarks } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardBookmarks />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'bookmarks',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('bookmarked-questions')).toBeInTheDocument();
     });
   });
 
   it('renders glossary view when currentView is glossary', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'glossary',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardGlossary } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardGlossary />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'glossary',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('glossary')).toBeInTheDocument();
     });
   });
 
   it('renders subelement-practice view when currentView is subelement-practice', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'subelement-practice',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardSubelement } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardSubelement />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'subelement-practice',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('subelement-practice')).toBeInTheDocument();
     });
   });
 
   it('renders weak-questions view when currentView is weak-questions', async () => {
-    vi.doMock('@/hooks/useAppNavigation', () => ({
-      useAppNavigation: () => ({
-        currentView: 'weak-questions',
-        setCurrentView: vi.fn(),
-        reviewingTestId: null,
-        setReviewingTestId: vi.fn(),
-      }),
-    }));
-    
-    const { default: DashboardWeak } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <DashboardWeak />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAppNavigation.mockReturnValueOnce({
+      currentView: 'weak-questions',
+      setCurrentView: mockSetCurrentView,
+      reviewingTestId: null,
+      setReviewingTestId: mockSetReviewingTestId,
+    });
+
+    renderDashboard();
+
     await waitFor(() => {
       expect(screen.getByTestId('weak-questions')).toBeInTheDocument();
     });
@@ -405,26 +317,13 @@ describe('Dashboard Views', () => {
 
 describe('Dashboard Loading State', () => {
   it('shows loading spinner when auth is loading', async () => {
-    vi.doMock('@/hooks/useAuth', () => ({
-      useAuth: () => ({
-        user: null,
-        loading: true,
-      }),
-    }));
-    
-    const { default: LoadingDashboard } = await import('./Dashboard');
-    
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <TooltipProvider>
-            <LoadingDashboard />
-          </TooltipProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-    
+    mockAuthHook.mockReturnValueOnce({
+      user: null,
+      loading: true,
+    });
+
+    renderDashboard();
+
     // When loading, it should show a loading state
     await waitFor(() => {
       expect(screen.getByTestId('app-layout')).toBeInTheDocument();

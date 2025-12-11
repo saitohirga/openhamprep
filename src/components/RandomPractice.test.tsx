@@ -30,12 +30,14 @@ const mockQuestions = [
   },
 ];
 
+const mockQuestionsHook = vi.fn(() => ({
+  data: mockQuestions,
+  isLoading: false,
+  error: null,
+}));
+
 vi.mock('@/hooks/useQuestions', () => ({
-  useQuestions: () => ({
-    data: mockQuestions,
-    isLoading: false,
-    error: null,
-  }),
+  useQuestions: () => mockQuestionsHook(),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -223,27 +225,16 @@ describe('RandomPractice', () => {
   });
 
   describe('Loading and Error States', () => {
-    it('shows loading state', async () => {
-      vi.doMock('@/hooks/useQuestions', () => ({
-        useQuestions: () => ({
-          data: null,
-          isLoading: true,
-          error: null,
-        }),
-      }));
-      
-      // Re-import to get the new mock
-      const { RandomPractice: LoadingRandomPractice } = await import('./RandomPractice');
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <LoadingRandomPractice onBack={vi.fn()} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
-      
+    it('shows loading state', () => {
+      // Override the mock to return loading state
+      mockQuestionsHook.mockReturnValueOnce({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      });
+
+      renderRandomPractice();
+
       // Component should handle loading gracefully
       expect(screen.queryByText(/loading/i)).toBeInTheDocument();
     });

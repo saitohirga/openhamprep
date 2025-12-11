@@ -40,12 +40,14 @@ const mockQuestions = [
   },
 ];
 
+const mockQuestionsHook = vi.fn(() => ({
+  data: mockQuestions,
+  isLoading: false,
+  error: null,
+}));
+
 vi.mock('@/hooks/useQuestions', () => ({
-  useQuestions: () => ({
-    data: mockQuestions,
-    isLoading: false,
-    error: null,
-  }),
+  useQuestions: () => mockQuestionsHook(),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -174,51 +176,31 @@ describe('SubelementPractice', () => {
   });
 
   describe('Loading State', () => {
-    it('shows loading state when questions are loading', async () => {
-      vi.doMock('@/hooks/useQuestions', () => ({
-        useQuestions: () => ({
-          data: null,
-          isLoading: true,
-          error: null,
-        }),
-      }));
-      
-      const { SubelementPractice: LoadingSubelementPractice } = await import('./SubelementPractice');
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <LoadingSubelementPractice onBack={vi.fn()} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
-      
+    it('shows loading state when questions are loading', () => {
+      // Override the mock to return loading state
+      mockQuestionsHook.mockReturnValueOnce({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      });
+
+      renderSubelementPractice();
+
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
   });
 
   describe('Error State', () => {
-    it('shows error state when questions fail to load', async () => {
-      vi.doMock('@/hooks/useQuestions', () => ({
-        useQuestions: () => ({
-          data: null,
-          isLoading: false,
-          error: new Error('Failed to load'),
-        }),
-      }));
-      
-      const { SubelementPractice: ErrorSubelementPractice } = await import('./SubelementPractice');
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <ErrorSubelementPractice onBack={vi.fn()} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
-      
+    it('shows error state when questions fail to load', () => {
+      // Override the mock to return error state
+      mockQuestionsHook.mockReturnValueOnce({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Failed to load'),
+      });
+
+      renderSubelementPractice();
+
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
     });

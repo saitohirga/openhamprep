@@ -48,16 +48,18 @@ vi.mock('@/hooks/useAuth', () => ({
 
 const mockRemoveBookmark = { mutate: vi.fn() };
 
+const mockBookmarksHook = vi.fn(() => ({
+  bookmarks: mockBookmarks,
+  isLoading: false,
+  isBookmarked: vi.fn((id: string) => mockBookmarks.some(b => b.question_id === id)),
+  addBookmark: { mutate: vi.fn() },
+  removeBookmark: mockRemoveBookmark,
+  getBookmarkNote: vi.fn((id: string) => mockBookmarks.find(b => b.question_id === id)?.note || null),
+  updateNote: { mutate: vi.fn() },
+}));
+
 vi.mock('@/hooks/useBookmarks', () => ({
-  useBookmarks: () => ({
-    bookmarks: mockBookmarks,
-    isLoading: false,
-    isBookmarked: vi.fn((id: string) => mockBookmarks.some(b => b.question_id === id)),
-    addBookmark: { mutate: vi.fn() },
-    removeBookmark: mockRemoveBookmark,
-    getBookmarkNote: vi.fn((id: string) => mockBookmarks.find(b => b.question_id === id)?.note || null),
-    updateNote: { mutate: vi.fn() },
-  }),
+  useBookmarks: () => mockBookmarksHook(),
 }));
 
 vi.mock('@/hooks/useExplanationFeedback', () => ({
@@ -144,30 +146,20 @@ describe('BookmarkedQuestions', () => {
   });
 
   describe('Empty State', () => {
-    it('shows empty state when no bookmarks exist', async () => {
-      vi.doMock('@/hooks/useBookmarks', () => ({
-        useBookmarks: () => ({
-          bookmarks: [],
-          isLoading: false,
-          isBookmarked: vi.fn(() => false),
-          addBookmark: { mutate: vi.fn() },
-          removeBookmark: { mutate: vi.fn() },
-          getBookmarkNote: vi.fn(() => null),
-          updateNote: { mutate: vi.fn() },
-        }),
-      }));
-      
-      const { BookmarkedQuestions: EmptyBookmarkedQuestions } = await import('./BookmarkedQuestions');
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <EmptyBookmarkedQuestions onBack={vi.fn()} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
-      
+    it('shows empty state when no bookmarks exist', () => {
+      // Override the mock to return empty bookmarks
+      mockBookmarksHook.mockReturnValueOnce({
+        bookmarks: [],
+        isLoading: false,
+        isBookmarked: vi.fn(() => false),
+        addBookmark: { mutate: vi.fn() },
+        removeBookmark: { mutate: vi.fn() },
+        getBookmarkNote: vi.fn(() => null),
+        updateNote: { mutate: vi.fn() },
+      });
+
+      renderBookmarkedQuestions();
+
       expect(screen.getByText('No bookmarks yet')).toBeInTheDocument();
       expect(screen.getByText('Bookmark questions during practice to review them later')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /start practicing/i })).toBeInTheDocument();
@@ -278,31 +270,21 @@ describe('BookmarkedQuestions', () => {
   });
 
   describe('Loading State', () => {
-    it('shows loading state when bookmarks are loading', async () => {
-      vi.doMock('@/hooks/useBookmarks', () => ({
-        useBookmarks: () => ({
-          bookmarks: null,
-          isLoading: true,
-          isBookmarked: vi.fn(() => false),
-          addBookmark: { mutate: vi.fn() },
-          removeBookmark: { mutate: vi.fn() },
-          getBookmarkNote: vi.fn(() => null),
-          updateNote: { mutate: vi.fn() },
-        }),
-      }));
-      
-      const { BookmarkedQuestions: LoadingBookmarkedQuestions } = await import('./BookmarkedQuestions');
-      
-      const queryClient = createTestQueryClient();
-      render(
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <LoadingBookmarkedQuestions onBack={vi.fn()} />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
-      
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    it('shows loading state when bookmarks are loading', () => {
+      // Override the mock to return loading state
+      mockBookmarksHook.mockReturnValueOnce({
+        bookmarks: undefined,
+        isLoading: true,
+        isBookmarked: vi.fn(() => false),
+        addBookmark: { mutate: vi.fn() },
+        removeBookmark: { mutate: vi.fn() },
+        getBookmarkNote: vi.fn(() => null),
+        updateNote: { mutate: vi.fn() },
+      });
+
+      renderBookmarkedQuestions();
+
+      expect(screen.getByText(/loading bookmarks/i)).toBeInTheDocument();
     });
   });
 });
