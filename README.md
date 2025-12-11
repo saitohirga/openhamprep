@@ -129,9 +129,8 @@ npm run dev
 
 **Hosted Supabase (manual):**
 Create a `.env` file with:
-- `VITE_SUPABASE_URL` - Your Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` - Your Supabase anon key
-- `VITE_SUPABASE_PROJECT_ID` - Your Supabase project ID
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
 
 ## Testing
 

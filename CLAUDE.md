@@ -100,9 +100,9 @@ All colors are HSL format defined as CSS custom properties. The design system su
 - Never manually edit files in `src/integrations/supabase/`
 
 **Environment Variables**:
-- `VITE_SUPABASE_URL` - Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` - Supabase anon key
-- Auto-configured when connected to Lovable Cloud
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
+- Auto-configured by Supabase Vercel Integration for all deployments
 
 **Key Database Tables**:
 - `questions` - Question pool (id, question, options[], correct_answer, subelement, question_group)
@@ -257,6 +257,25 @@ To migrate from Lovable Cloud to a standalone Supabase project:
 1. Run the migration script: `./migrate-to-supabase.sh`
 2. Follow the prompts to link your project and apply migrations
 3. See `docs/SUPABASE_MIGRATION.md` for detailed instructions
+
+### Preview Branches (Vercel + Supabase)
+
+Every PR automatically gets:
+- **Vercel Preview**: Frontend deployed to a unique URL
+- **Supabase Preview Branch**: Isolated database with seeded test data
+
+**Setup Requirements:**
+1. Install the [Supabase Vercel Integration](https://vercel.com/integrations/supabase)
+2. The integration auto-sets `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for all environments
+3. No manual env var configuration needed
+
+**Preview Branch Seed Data** (`supabase/seed.sql`):
+- 40 Technician questions, 35 General questions, 35 Extra questions
+- 30 glossary terms
+- 5 exam sessions (various dates/locations near NC)
+- Users must sign up fresh (auth is not cloned between branches)
+
+**Note:** Supabase preview branches clone schema but NOT `auth.users`. Each preview starts with no users - reviewers sign up to test.
 
 ## Testing Philosophy
 
