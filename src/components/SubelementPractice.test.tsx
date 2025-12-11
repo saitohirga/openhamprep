@@ -101,6 +101,14 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
+vi.mock('@/components/TopicLanding', () => ({
+  TopicLanding: ({ onStartPractice }: any) => (
+    <div data-testid="topic-landing">
+      <button onClick={onStartPractice}>Start Practice</button>
+    </div>
+  ),
+}));
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {

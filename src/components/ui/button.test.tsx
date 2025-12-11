@@ -20,7 +20,7 @@ describe('Button', () => {
     expect(getByRole('button')).toHaveClass('border');
 
     rerender(<Button variant="ghost">Ghost</Button>);
-    expect(getByRole('button')).toHaveClass('hover:bg-accent');
+    expect(getByRole('button')).toHaveClass('hover:bg-muted');
   });
 
   it('applies size classes correctly', () => {

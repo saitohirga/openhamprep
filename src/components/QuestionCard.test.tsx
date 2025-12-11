@@ -159,12 +159,16 @@ describe('QuestionCard', () => {
   describe('Accessibility', () => {
     it('disables option buttons when showResult is true', () => {
       renderQuestionCard({ selectedAnswer: 'A', showResult: true });
-      
+
       const buttons = screen.getAllByRole('button');
-      const optionButtons = buttons.filter(btn => 
-        ['A', 'B', 'C', 'D'].some(letter => btn.textContent?.startsWith(letter))
+      // Filter for option buttons by checking if they contain the answer text
+      const optionButtons = buttons.filter(btn =>
+        btn.textContent?.includes('To provide emergency communications') ||
+        btn.textContent?.includes('To make money') ||
+        btn.textContent?.includes('To broadcast music') ||
+        btn.textContent?.includes('To replace cell phones')
       );
-      
+
       optionButtons.forEach(button => {
         expect(button).toBeDisabled();
       });

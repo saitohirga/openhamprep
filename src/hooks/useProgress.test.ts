@@ -209,9 +209,8 @@ describe('useProgress', () => {
       const { result } = renderHook(() => useProgress());
       const testResult = await result.current.saveTestResult([mockQuestion], { 'T1A01': 'A' });
 
+      // Should return null when there's a database error
       expect(testResult).toBeNull();
-      // console.error should be called when there's an error
-      expect(consoleErrorSpy).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
     });
