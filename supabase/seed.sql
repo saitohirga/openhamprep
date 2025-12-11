@@ -5,67 +5,106 @@
 -- =============================================================================
 -- TEST USER (for preview branch testing)
 -- Email: test@example.com
--- Password: password123
+-- Password: randomly generated each deployment (check logs below)
 -- =============================================================================
 
--- Create test user in auth.users
-INSERT INTO auth.users (
-  id,
-  instance_id,
-  email,
-  encrypted_password,
-  email_confirmed_at,
-  created_at,
-  updated_at,
-  raw_app_meta_data,
-  raw_user_meta_data,
-  is_super_admin,
-  role,
-  aud,
-  confirmation_token,
-  recovery_token,
-  email_change_token_new,
-  email_change
-) VALUES (
-  '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000000',
-  'test@example.com',
-  -- bcrypt hash of 'password123'
-  '$2a$10$PznXpsLnpJzNUVvlGpLOaO0LEFGK3X0p6/NqJyTl5dLbeGxDUmSNu',
-  NOW(),
-  NOW(),
-  NOW(),
-  '{"provider": "email", "providers": ["email"]}',
-  '{"display_name": "Test User"}',
-  FALSE,
-  'authenticated',
-  'authenticated',
-  '',
-  '',
-  '',
-  ''
-) ON CONFLICT (id) DO NOTHING;
+DO $$
+DECLARE
+  test_user_id UUID := '00000000-0000-0000-0000-000000000001';
+  proj_instance_id UUID;
+  random_password TEXT;
+  hashed_password TEXT;
+BEGIN
+  -- Generate a random 16-character password
+  random_password := substr(md5(random()::text || clock_timestamp()::text), 1, 16);
 
--- Create identity for the test user
-INSERT INTO auth.identities (
-  id,
-  user_id,
-  identity_data,
-  provider,
-  provider_id,
-  created_at,
-  updated_at,
-  last_sign_in_at
-) VALUES (
-  '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001',
-  '{"sub": "00000000-0000-0000-0000-000000000001", "email": "test@example.com"}',
-  'email',
-  'test@example.com',
-  NOW(),
-  NOW(),
-  NOW()
-) ON CONFLICT (id) DO NOTHING;
+  -- Hash the password using bcrypt (pgcrypto)
+  hashed_password := crypt(random_password, gen_salt('bf'));
+
+  -- Get the actual instance_id from the project (required for hosted Supabase)
+  SELECT id INTO proj_instance_id FROM auth.instances LIMIT 1;
+
+  -- Fallback for local development where instances table may be empty
+  IF proj_instance_id IS NULL THEN
+    proj_instance_id := '00000000-0000-0000-0000-000000000000';
+  END IF;
+
+  -- Delete existing test user if exists (to update password)
+  DELETE FROM auth.identities WHERE user_id = test_user_id;
+  DELETE FROM auth.users WHERE id = test_user_id;
+
+  -- Create test user in auth.users
+  INSERT INTO auth.users (
+    id,
+    instance_id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    created_at,
+    updated_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    is_super_admin,
+    role,
+    aud,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    test_user_id,
+    proj_instance_id,
+    'test@example.com',
+    hashed_password,
+    NOW(),
+    NOW(),
+    NOW(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{"display_name": "Test User"}',
+    FALSE,
+    'authenticated',
+    'authenticated',
+    '',
+    '',
+    '',
+    ''
+  );
+
+  -- Create identity for the test user
+  INSERT INTO auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    provider_id,
+    created_at,
+    updated_at,
+    last_sign_in_at
+  ) VALUES (
+    test_user_id,
+    test_user_id,
+    jsonb_build_object('sub', test_user_id::text, 'email', 'test@example.com'),
+    'email',
+    'test@example.com',
+    NOW(),
+    NOW(),
+    NOW()
+  );
+
+  -- Print credentials to deployment logs
+  RAISE NOTICE '';
+  RAISE NOTICE '╔════════════════════════════════════════════════════════════╗';
+  RAISE NOTICE '║           PREVIEW BRANCH TEST CREDENTIALS                  ║';
+  RAISE NOTICE '╠════════════════════════════════════════════════════════════╣';
+  RAISE NOTICE '║  Email:    test@example.com                                ║';
+  RAISE NOTICE '║  Password: %                                ║', random_password;
+  RAISE NOTICE '╚════════════════════════════════════════════════════════════╝';
+  RAISE NOTICE '';
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Test user creation failed: % - %', SQLSTATE, SQLERRM;
+END $$;
 
 -- =============================================================================
 -- QUESTIONS (35+ per license type for full practice tests)
@@ -681,7 +720,7 @@ BEGIN
   RAISE NOTICE '========================================';
   RAISE NOTICE 'Preview Branch Seeded Successfully!';
   RAISE NOTICE '========================================';
-  RAISE NOTICE 'Test User: test@example.com / password123';
+  RAISE NOTICE 'Test User: see credentials box above';
   RAISE NOTICE '';
   RAISE NOTICE 'Questions: % (35+ per license type)', (SELECT COUNT(*) FROM public.questions);
   RAISE NOTICE '  - Technician: %', (SELECT COUNT(*) FROM public.questions WHERE id LIKE 'T%');
