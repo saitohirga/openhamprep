@@ -1,22 +1,9 @@
 -- Seed file for Supabase preview branches and local development
 -- Automatically runs on preview branches and `supabase db reset`
 -- Provides enough data to test all app features
-
--- =============================================================================
--- TEST USER (for preview branch testing)
 --
--- After deployment, call the seed-test-user Edge Function to create the test user:
---   curl -X POST https://<project-ref>.supabase.co/functions/v1/seed-test-user
---
--- Credentials:
---   Email: test@example.com
---   Password: preview-<branch-name>
---
--- Example: For branch "feat/my-feature", password is "preview-feat/my-feature"
--- The Edge Function response will include the actual password.
---
--- NOTE: Direct SQL inserts into auth.users are not supported by Supabase.
---       The Edge Function uses the Admin API instead.
+-- TEST USER: Sign up directly in the app to create a test account.
+-- This ensures the signup flow is always tested.
 -- =============================================================================
 
 -- =============================================================================
@@ -633,7 +620,7 @@ BEGIN
   RAISE NOTICE '========================================';
   RAISE NOTICE 'Preview Branch Seeded Successfully!';
   RAISE NOTICE '========================================';
-  RAISE NOTICE 'Test User: Call seed-test-user Edge Function (password: preview-<branch>)';
+  RAISE NOTICE 'Test User: Sign up in the app to create an account';
   RAISE NOTICE '';
   RAISE NOTICE 'Questions: % (35+ per license type)', (SELECT COUNT(*) FROM public.questions);
   RAISE NOTICE '  - Technician: %', (SELECT COUNT(*) FROM public.questions WHERE id LIKE 'T%');

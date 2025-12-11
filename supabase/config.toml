@@ -21,6 +21,3 @@ verify_jwt = false
 
 [functions.manage-question-links]
 verify_jwt = false
-
-[functions.seed-test-user]
-verify_jwt = false
