@@ -289,8 +289,8 @@ export function GlossaryFlashcards({ onBack }: GlossaryFlashcardsProps) {
                 <CardContent className="flex-1 flex items-center justify-center p-0">
                   <p className={cn(
                     "text-center",
-                    (isFlipped ? backContent : frontContent)?.length! > 100 
-                      ? "text-lg" 
+                    ((isFlipped ? backContent : frontContent) || '').length > 100
+                      ? "text-lg"
                       : "text-2xl font-semibold"
                   )}>
                     {isFlipped ? backContent : frontContent}

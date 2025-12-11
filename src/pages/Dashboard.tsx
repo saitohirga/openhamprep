@@ -52,7 +52,7 @@ export default function Dashboard() {
     if (viewParam && viewParam !== currentView) {
       setCurrentView(viewParam as typeof currentView);
     }
-  }, [searchParams, setCurrentView]);
+  }, [searchParams, setCurrentView, currentView]);
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/');

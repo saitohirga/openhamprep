@@ -136,7 +136,7 @@ export function MarkdownText({ text, className }: MarkdownTextProps) {
       }
 
       // Find the next special character
-      const nextSpecial = remaining.search(/[*_`\^]/);
+      const nextSpecial = remaining.search(/[*_`^]/);
       if (nextSpecial === -1) {
         // No more special characters, add the rest as text
         elements.push(<span key={key++}>{remaining}</span>);

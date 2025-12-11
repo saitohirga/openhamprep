@@ -29,98 +29,108 @@ export function Calculator({ className }: CalculatorProps) {
     }
   }, [isOpen, hasTrackedOpen, capture]);
 
-  const inputDigit = (digit: string) => {
-    if (waitingForOperand) {
-      setDisplay(digit);
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === "0" ? digit : display + digit);
-    }
-  };
+  const inputDigit = useCallback((digit: string) => {
+    setDisplay(prev => {
+      if (waitingForOperand) {
+        setWaitingForOperand(false);
+        return digit;
+      }
+      return prev === "0" ? digit : prev + digit;
+    });
+  }, [waitingForOperand]);
 
-  const inputDecimal = () => {
-    if (waitingForOperand) {
-      setDisplay("0.");
-      setWaitingForOperand(false);
-      return;
-    }
-    if (!display.includes(".")) {
-      setDisplay(display + ".");
-    }
-  };
+  const inputDecimal = useCallback(() => {
+    setDisplay(prev => {
+      if (waitingForOperand) {
+        setWaitingForOperand(false);
+        return "0.";
+      }
+      if (!prev.includes(".")) {
+        return prev + ".";
+      }
+      return prev;
+    });
+  }, [waitingForOperand]);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setDisplay("0");
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
-  };
+  }, []);
 
-  const performOperation = (nextOperation: string) => {
-    const inputValue = parseFloat(display);
+  const performOperation = useCallback((nextOperation: string) => {
+    setDisplay(prev => {
+      const inputValue = parseFloat(prev);
 
-    if (previousValue === null) {
-      setPreviousValue(inputValue);
-    } else if (operation) {
-      const currentValue = previousValue || 0;
+      if (previousValue === null) {
+        setPreviousValue(inputValue);
+      } else if (operation) {
+        const currentValue = previousValue || 0;
+        let result: number;
+
+        switch (operation) {
+          case "+":
+            result = currentValue + inputValue;
+            break;
+          case "-":
+            result = currentValue - inputValue;
+            break;
+          case "×":
+            result = currentValue * inputValue;
+            break;
+          case "÷":
+            result = inputValue !== 0 ? currentValue / inputValue : 0;
+            break;
+          default:
+            result = inputValue;
+        }
+
+        setPreviousValue(result);
+        setWaitingForOperand(true);
+        setOperation(nextOperation);
+        return String(result);
+      }
+
+      setWaitingForOperand(true);
+      setOperation(nextOperation);
+      return prev;
+    });
+  }, [previousValue, operation]);
+
+  const calculate = useCallback(() => {
+    if (!operation || previousValue === null) return;
+
+    setDisplay(prev => {
+      const inputValue = parseFloat(prev);
       let result: number;
 
       switch (operation) {
         case "+":
-          result = currentValue + inputValue;
+          result = previousValue + inputValue;
           break;
         case "-":
-          result = currentValue - inputValue;
+          result = previousValue - inputValue;
           break;
         case "×":
-          result = currentValue * inputValue;
+          result = previousValue * inputValue;
           break;
         case "÷":
-          result = inputValue !== 0 ? currentValue / inputValue : 0;
+          result = inputValue !== 0 ? previousValue / inputValue : 0;
           break;
         default:
           result = inputValue;
       }
 
-      setDisplay(String(result));
-      setPreviousValue(result);
-    }
+      // Track calculation performed
+      capture(ANALYTICS_EVENTS.CALCULATOR_USED, { operation });
 
-    setWaitingForOperand(true);
-    setOperation(nextOperation);
-  };
-
-  const calculate = () => {
-    if (!operation || previousValue === null) return;
-
-    const inputValue = parseFloat(display);
-    let result: number;
-
-    switch (operation) {
-      case "+":
-        result = previousValue + inputValue;
-        break;
-      case "-":
-        result = previousValue - inputValue;
-        break;
-      case "×":
-        result = previousValue * inputValue;
-        break;
-      case "÷":
-        result = inputValue !== 0 ? previousValue / inputValue : 0;
-        break;
-      default:
-        result = inputValue;
-    }
-
-    // Track calculation performed
-    capture(ANALYTICS_EVENTS.CALCULATOR_USED, { operation });
-
-    setDisplay(String(result));
-    setPreviousValue(null);
-    setOperation(null);
-    setWaitingForOperand(true);
-  };
+      setPreviousValue(null);
+      setOperation(null);
+      setWaitingForOperand(true);
+      return String(result);
+    });
+  }, [operation, previousValue, capture]);
 
   const buttons = [
     ["C", "÷"],
@@ -142,7 +152,7 @@ export function Calculator({ className }: CalculatorProps) {
     } else {
       inputDigit(btn);
     }
-  }, [display, previousValue, operation, waitingForOperand]);
+  }, [clear, calculate, performOperation, inputDecimal, inputDigit]);
 
   // Keyboard support
   useEffect(() => {
