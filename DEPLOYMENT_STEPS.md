@@ -5,7 +5,7 @@ Follow these steps to deploy the dual-site architecture.
 ## Overview
 
 - **Marketing Site:** `openhamprep.com` → GitHub Pages
-- **React App:** `app.openhamprep.com` → Cloudflare Pages
+- **React App:** `app.openhamprep.com` → Vercel
 
 ---
 
@@ -36,25 +36,27 @@ Since your domain is managed by Cloudflare, configure these DNS records:
 Type: A
 Name: @
 Content: 185.199.108.153
-Proxy: ON (orange cloud)
+Proxy: OFF (gray cloud - DNS only)
 
 Type: A
 Name: @
 Content: 185.199.109.153
-Proxy: ON (orange cloud)
+Proxy: OFF (gray cloud - DNS only)
 
 Type: A
 Name: @
 Content: 185.199.110.153
-Proxy: ON (orange cloud)
+Proxy: OFF (gray cloud - DNS only)
 
 Type: A
 Name: @
 Content: 185.199.111.153
-Proxy: ON (orange cloud)
+Proxy: OFF (gray cloud - DNS only)
 ```
 
-**Note:** You need all 4 A records pointing to GitHub's IPs for redundancy.
+**Note:**
+- You need all 4 A records pointing to GitHub's IPs for redundancy
+- **Important:** Proxy must be OFF (gray cloud) - GitHub Pages doesn't work with Cloudflare proxy enabled
 
 ### Step 4: Verify Marketing Deployment
 
@@ -72,34 +74,32 @@ Proxy: ON (orange cloud)
 
 ---
 
-## Part 2: Cloudflare Pages Setup (React App)
+## Part 2: Vercel Setup (React App)
 
-### Step 1: Create Cloudflare Pages Project
+### Step 1: Create Vercel Project
 
-1. Go to Cloudflare Dashboard → **Pages**
-2. Click **Create a project**
-3. Select **Connect to Git**
-4. Authorize Cloudflare to access your GitHub account
-5. Select repository: **sonyccd/openhamprep**
-6. Click **Begin setup**
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click **Add New** → **Project**
+3. Import your GitHub repository: **sonyccd/openhamprep**
+4. Click **Import**
 
 ### Step 2: Configure Build Settings
 
+Vercel auto-detects Vite projects. Verify these settings:
+
 ```
-Project name: openhamprep-app (or your preference)
-Production branch: main
-Framework preset: Vite
-Build command: npm run build
-Build output directory: dist
-Root directory: / (leave blank - uses repository root)
+Framework Preset: Vite
+Build Command: npm run build
+Output Directory: dist
+Install Command: npm install
+Root Directory: ./
 ```
 
 ### Step 3: Add Environment Variables
 
-Click **Environment variables** and add:
+Under **Environment Variables**, add:
 
 ```
-NODE_VERSION = 18
 VITE_SUPABASE_URL = <your-supabase-project-url>
 VITE_SUPABASE_ANON_KEY = <your-supabase-anon-key>
 VITE_POSTHOG_KEY = <your-posthog-key>
@@ -111,31 +111,37 @@ VITE_POSTHOG_HOST = <your-posthog-host>
 - Settings → API
 - Copy `URL` and `anon public` key
 
-### Step 4: Save and Deploy
+**Important:** Make sure to apply these variables to **Production**, **Preview**, and **Development** environments.
 
-1. Click **Save and Deploy**
-2. Cloudflare will start the first build
-3. This takes 2-5 minutes
-4. You'll get a temporary URL like `openhamprep-app.pages.dev`
+### Step 4: Deploy
+
+1. Click **Deploy**
+2. Vercel will build and deploy your app
+3. This takes 1-3 minutes
+4. You'll get a deployment URL like `openhamprep.vercel.app`
 
 ### Step 5: Configure Custom Domain
 
-1. In your Cloudflare Pages project, go to **Custom domains**
-2. Click **Set up a custom domain**
-3. Enter: `app.openhamprep.com`
-4. Click **Continue**
-5. Cloudflare will automatically add the DNS record (since domain is on Cloudflare)
-6. Wait for SSL certificate provisioning (~1 minute)
+1. In your Vercel project, go to **Settings** → **Domains**
+2. Add domain: `app.openhamprep.com`
+3. Click **Add**
+4. Vercel will provide DNS configuration instructions
 
-**Expected DNS Record (auto-created):**
+### Step 6: Update Cloudflare DNS
+
+Add a CNAME record in Cloudflare DNS:
+
 ```
 Type: CNAME
 Name: app
-Content: openhamprep-app.pages.dev (or your project name)
-Proxy: ON (orange cloud)
+Target: cname.vercel-dns.com
+Proxy: OFF (gray cloud - DNS only)
+TTL: Auto
 ```
 
-### Step 6: Verify App Deployment
+**Important:** Proxy must be OFF (gray cloud) for Vercel's SSL to work properly.
+
+### Step 7: Verify App Deployment
 
 1. Visit `https://app.openhamprep.com`
 2. You should see a loading spinner, then be redirected to `/auth`
@@ -152,24 +158,15 @@ Proxy: ON (orange cloud)
 
 ---
 
-## Part 3: Configure Build Optimization (Optional)
+## Part 3: Build Optimization
 
-### Ignore Marketing Changes in Cloudflare
+### Automatic Deployment Triggers
 
-By default, Cloudflare Pages rebuilds on every commit. To only rebuild when app files change:
+Both platforms have smart deployment triggers:
 
-1. In Cloudflare Pages project settings
-2. Go to **Builds & deployments**
-3. Under **Build configurations** → **Production**
-4. Click **Configure Production deployments**
-5. Enable **Build watch paths** (if available)
-6. Add path filter: `!(marketing/**)`
-
-This prevents rebuilds when only marketing content changes.
-
-### Path Filtering Already Set Up
-
-The GitHub Actions workflow already has path filtering:
+**GitHub Pages (Marketing):**
+- Only deploys when files in `marketing/` directory change
+- Configured in `.github/workflows/deploy-marketing.yml`:
 ```yaml
 on:
   push:
@@ -179,7 +176,15 @@ on:
       - 'marketing/**'
 ```
 
-This means GitHub Pages only deploys when marketing files change.
+**Vercel (React App):**
+- Automatically deploys on every push to `main`
+- Can be configured to ignore marketing changes in Vercel dashboard:
+  1. Go to **Settings** → **Git**
+  2. Under **Ignored Build Step**, add custom script:
+  ```bash
+  git diff HEAD^ HEAD --quiet -- marketing/
+  ```
+  3. This skips rebuilds when only marketing files change
 
 ---
 
@@ -230,16 +235,16 @@ This means GitHub Pages only deploys when marketing files change.
 3. Verify CNAME file exists in `marketing/` directory
 4. Check DNS propagation: https://dnschecker.org
 
-### Cloudflare Pages Build Fails
+### Vercel Build Fails
 
 **Problem:** Build fails with errors
 
 **Solutions:**
-1. Check build logs in Cloudflare dashboard
+1. Check build logs in Vercel dashboard
 2. Verify all environment variables are set
-3. Ensure `NODE_VERSION=18` is set
-4. Check that `npm run build` works locally
-5. Verify Supabase credentials are correct
+3. Check that `npm run build` works locally
+4. Verify Supabase credentials are correct
+5. Ensure environment variables are applied to the correct environment (Production/Preview/Development)
 
 ### DNS Not Resolving
 
@@ -248,9 +253,9 @@ This means GitHub Pages only deploys when marketing files change.
 **Solutions:**
 1. Wait 5-10 minutes for DNS propagation
 2. Check Cloudflare DNS settings match above
-3. Ensure Proxy is enabled (orange cloud)
+3. **Ensure Proxy is DISABLED (gray cloud)** for both GitHub Pages and Vercel
 4. Clear browser DNS cache
-5. Test with: `nslookup openhamprep.com`
+5. Test with: `nslookup openhamprep.com` and `nslookup app.openhamprep.com`
 
 ### SSL Certificate Issues
 
@@ -258,9 +263,10 @@ This means GitHub Pages only deploys when marketing files change.
 
 **Solutions:**
 1. GitHub Pages: Wait 10-15 minutes after DNS setup
-2. Cloudflare Pages: SSL is usually instant
+2. Vercel: SSL is usually instant
 3. Ensure "Enforce HTTPS" is checked in GitHub Pages settings
-4. In Cloudflare, ensure SSL mode is "Full" or "Full (strict)"
+4. Verify Cloudflare proxy is disabled (gray cloud) for both domains
+5. In Cloudflare, SSL mode should be "Full" or "Full (strict)"
 
 ### App Authentication Not Working
 
@@ -289,11 +295,11 @@ This means GitHub Pages only deploys when marketing files change.
 
 ✅ **Auto-deployment works:**
 - Push to `main` triggers GitHub Actions for marketing
-- Push to `main` triggers Cloudflare rebuild for app
+- Push to `main` triggers Vercel rebuild for app
 
-✅ **Zero cost:**
+✅ **Zero/Low cost:**
 - GitHub Pages: Free
-- Cloudflare Pages: Free tier
+- Vercel: Free tier (generous limits)
 
 ---
 
@@ -319,9 +325,9 @@ This means GitHub Pages only deploys when marketing files change.
 - Marketing workflow: `.github/workflows/deploy-marketing.yml`
 - Marketing content: `marketing/` directory
 - App config: `vite.config.ts`, `package.json`
-- Deployment docs: `CLOUDFLARE_PAGES_SETUP.md`
+- Deployment docs: `DEPLOYMENT_STEPS.md`
 
 ### Support Resources
 - GitHub Pages Docs: https://docs.github.com/en/pages
-- Cloudflare Pages Docs: https://developers.cloudflare.com/pages
+- Vercel Docs: https://vercel.com/docs
 - Supabase Docs: https://supabase.com/docs

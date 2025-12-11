@@ -209,11 +209,11 @@ See [marketing/README.md](marketing/README.md) for details.
 ### Application (`app.openhamprep.com`)
 - **Location:** Repository root
 - **Technology:** React SPA with Vite
-- **Hosting:** Cloudflare Pages (recommended, free)
+- **Hosting:** Vercel (free tier)
 - **Backend:** Supabase (PostgreSQL, Auth, Edge Functions)
 - **Purpose:** Authenticated user application
 
-See [CLOUDFLARE_PAGES_SETUP.md](CLOUDFLARE_PAGES_SETUP.md) for deployment instructions.
+See [DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md) for deployment instructions.
 
 ### Why Separate Deployments?
 
