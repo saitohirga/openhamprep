@@ -20,6 +20,10 @@ dist-ssr
 
 # Supabase local
 .supabase/
+supabase/.temp/
+
+# Data directory (may contain PII from exports)
+data/
 
 # Editor directories and files
 .vscode/*
