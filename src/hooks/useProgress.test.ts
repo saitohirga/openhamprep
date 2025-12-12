@@ -79,7 +79,7 @@ describe('useProgress', () => {
         total_questions: 1,
         percentage: 100,
         passed: false, // Need 26 to pass
-        test_type: 'practice',
+        test_type: 'technician', // Default test type
       });
 
       expect(mockAttemptsInsert).toHaveBeenCalledWith([

@@ -1,13 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Question } from '@/hooks/useQuestions';
+import { TestType } from '@/types/navigation';
 
 export function useProgress() {
   const { user } = useAuth();
 
   const saveTestResult = async (
     questions: Question[],
-    answers: Record<string, 'A' | 'B' | 'C' | 'D'>
+    answers: Record<string, 'A' | 'B' | 'C' | 'D'>,
+    testType: TestType = 'technician'
   ) => {
     if (!user) return null;
 
@@ -27,7 +29,7 @@ export function useProgress() {
         total_questions: totalQuestions,
         percentage,
         passed,
-        test_type: 'practice'
+        test_type: testType
       })
       .select()
       .single();

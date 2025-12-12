@@ -90,13 +90,13 @@ export function PracticeTest({
   useEffect(() => {
     if (timerEnabled && timeRemaining === 0 && !isFinished && hasStarted) {
       setIsFinished(true);
-      saveTestResult(questions, answers).then(result => {
+      saveTestResult(questions, answers, testType).then(result => {
         if (result) {
           toast.success('Test results saved!');
         }
       });
     }
-  }, [timeRemaining, timerEnabled, isFinished, hasStarted, questions, answers, saveTestResult]);
+  }, [timeRemaining, timerEnabled, isFinished, hasStarted, questions, answers, saveTestResult, testType]);
 
   // Handlers defined before useKeyboardShortcuts to avoid hooks ordering issues
   const handleSelectAnswer = (answer: 'A' | 'B' | 'C' | 'D') => {
@@ -236,7 +236,7 @@ export function PracticeTest({
 
   const handleFinishInternal = async () => {
     setIsFinished(true);
-    const result = await saveTestResult(questions, answers);
+    const result = await saveTestResult(questions, answers, testType);
     if (result) {
       const correctCount = questions.filter(q => answers[q.id] === q.correctAnswer).length;
       const percentage = Math.round((correctCount / questions.length) * 100);

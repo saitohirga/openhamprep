@@ -41,7 +41,16 @@ export default function Dashboard() {
     setReviewingTestId
   } = useAppNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedTest, setSelectedTest] = useState<TestType>('technician');
+  // Persist selectedTest in localStorage
+  const [selectedTest, setSelectedTest] = useState<TestType>(() => {
+    const saved = localStorage.getItem('selectedTestType');
+    return (saved as TestType) || 'technician';
+  });
+
+  // Save selectedTest to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('selectedTestType', selectedTest);
+  }, [selectedTest]);
   const [testInProgress, setTestInProgress] = useState(false);
   const [pendingView, setPendingView] = useState<typeof currentView | null>(null);
   const [showNavigationWarning, setShowNavigationWarning] = useState(false);
@@ -77,10 +86,15 @@ export default function Dashboard() {
   } = useQuery({
     queryKey: ['test-results', user?.id, selectedTest],
     queryFn: async () => {
+      // Handle both legacy 'practice' test_type and new test type values
+      const testTypesToMatch = selectedTest === 'technician'
+        ? ['practice', 'technician']  // Include legacy 'practice' for backward compatibility
+        : [selectedTest];
+
       const {
         data,
         error
-      } = await supabase.from('practice_test_results').select('*').eq('user_id', user!.id).eq('test_type', selectedTest === 'technician' ? 'practice' : selectedTest).order('completed_at', {
+      } = await supabase.from('practice_test_results').select('*').eq('user_id', user!.id).in('test_type', testTypesToMatch).order('completed_at', {
         ascending: false
       });
       if (error) throw error;
@@ -151,11 +165,18 @@ export default function Dashboard() {
     return weekStart;
   };
   const weekStart = getWeekStart();
-  const thisWeekTests = testResults?.filter(t => new Date(t.completed_at) >= weekStart).length || 0;
-  const thisWeekQuestions = questionAttempts?.filter(a => new Date(a.attempted_at) >= weekStart).length || 0;
 
-  // Calculate weak questions (questions where incorrect answers > correct answers)
-  const weakQuestionIds = questionAttempts ? calculateWeakQuestionIds(questionAttempts) : [];
+  // Get question ID prefix for current test type
+  const testTypePrefix = selectedTest === 'technician' ? 'T' : selectedTest === 'general' ? 'G' : 'E';
+
+  // Filter question attempts by test type (based on question_id prefix)
+  const filteredAttempts = questionAttempts?.filter(a => a.question_id.startsWith(testTypePrefix)) || [];
+
+  const thisWeekTests = testResults?.filter(t => new Date(t.completed_at) >= weekStart).length || 0;
+  const thisWeekQuestions = filteredAttempts.filter(a => new Date(a.attempted_at) >= weekStart).length || 0;
+
+  // Calculate weak questions (questions where incorrect answers > correct answers) - filtered by test type
+  const weakQuestionIds = filteredAttempts.length > 0 ? calculateWeakQuestionIds(filteredAttempts) : [];
   const currentTest = testTypes.find(t => t.id === selectedTest);
   const isTestAvailable = currentTest?.available ?? false;
 
@@ -220,12 +241,12 @@ export default function Dashboard() {
     }
     if (!user) return null;
 
-    // Calculate stats
+    // Calculate stats (using filtered attempts for the selected test type)
     const totalTests = testResults?.length || 0;
     const passedTests = testResults?.filter(t => t.passed).length || 0;
     const avgScore = totalTests > 0 ? Math.round(testResults!.reduce((sum, t) => sum + Number(t.percentage), 0) / totalTests) : 0;
-    const totalAttempts = questionAttempts?.length || 0;
-    const correctAttempts = questionAttempts?.filter(a => a.is_correct).length || 0;
+    const totalAttempts = filteredAttempts.length;
+    const correctAttempts = filteredAttempts.filter(a => a.is_correct).length;
     const overallAccuracy = totalAttempts > 0 ? Math.round(correctAttempts / totalAttempts * 100) : 0;
     const recentTests = testResults?.slice(0, 3) || [];
 
