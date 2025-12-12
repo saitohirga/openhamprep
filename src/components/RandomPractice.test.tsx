@@ -101,7 +101,7 @@ const renderRandomPractice = (props = {}) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <RandomPractice onBack={vi.fn()} {...props} />
+        <RandomPractice onBack={vi.fn()} testType="technician" {...props} />
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { TestType } from "@/types/navigation";
+
+// Map test type to question ID prefix
+const testTypePrefixMap: Record<TestType, string> = {
+  technician: 'T',
+  general: 'G',
+  extra: 'E',
+};
 
 export interface LinkData {
   url: string;
@@ -65,16 +73,24 @@ function transformQuestion(dbQuestion: DbQuestion): Question {
   };
 }
 
-export function useQuestions() {
+export function useQuestions(testType?: TestType) {
   return useQuery({
-    queryKey: ['questions'],
+    queryKey: ['questions', testType],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('questions')
         .select('*');
-      
+
       if (error) throw error;
-      return (data as DbQuestion[]).map(transformQuestion);
+      let questions = (data as DbQuestion[]).map(transformQuestion);
+
+      // Filter by test type if provided
+      if (testType) {
+        const prefix = testTypePrefixMap[testType];
+        questions = questions.filter(q => q.id.startsWith(prefix));
+      }
+
+      return questions;
     },
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });

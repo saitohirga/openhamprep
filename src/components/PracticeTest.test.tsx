@@ -108,15 +108,15 @@ const renderPracticeTest = (props = {}) => {
   const queryClient = createTestQueryClient();
   const onBack = vi.fn();
   const onTestStateChange = vi.fn();
-  
+
   const result = render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <PracticeTest onBack={onBack} onTestStateChange={onTestStateChange} {...props} />
+        <PracticeTest onBack={onBack} onTestStateChange={onTestStateChange} testType="technician" {...props} />
       </TooltipProvider>
     </QueryClientProvider>
   );
-  
+
   return { ...result, onBack, onTestStateChange };
 };
 

@@ -119,15 +119,15 @@ const createTestQueryClient = () =>
 const renderSubelementPractice = (props = {}) => {
   const queryClient = createTestQueryClient();
   const onBack = vi.fn();
-  
+
   const result = render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SubelementPractice onBack={onBack} {...props} />
+        <SubelementPractice onBack={onBack} testType="technician" {...props} />
       </TooltipProvider>
     </QueryClientProvider>
   );
-  
+
   return { ...result, onBack };
 };
 
@@ -158,20 +158,20 @@ describe('SubelementPractice', () => {
 
     it('shows subelement names', () => {
       renderSubelementPractice();
-      
-      // T1 is "Operating Procedures" in the SUBELEMENT_NAMES
+
+      // T1 is "Commission's Rules" in the SUBELEMENT_NAMES for technician
+      expect(screen.getByText("Commission's Rules")).toBeInTheDocument();
+      // T2 is "Operating Procedures"
       expect(screen.getByText('Operating Procedures')).toBeInTheDocument();
-      // T2 is "Radio Wave Characteristics"
-      expect(screen.getByText('Radio Wave Characteristics')).toBeInTheDocument();
     });
   });
 
   describe('Topic Selection', () => {
     it('navigates to topic landing when clicking a subelement', async () => {
       renderSubelementPractice();
-      
-      // Click on T1 topic
-      const t1Button = screen.getByText('Operating Procedures').closest('button');
+
+      // Click on T1 topic (Commission's Rules)
+      const t1Button = screen.getByText("Commission's Rules").closest('button');
       if (t1Button) {
         fireEvent.click(t1Button);
       }
@@ -222,17 +222,17 @@ describe('SubelementPractice Stats', () => {
 
   it('displays initial stats at zero in practice view', async () => {
     const queryClient = createTestQueryClient();
-    
+
     render(
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <SubelementPractice onBack={vi.fn()} />
+          <SubelementPractice onBack={vi.fn()} testType="technician" />
         </TooltipProvider>
       </QueryClientProvider>
     );
-    
-    // Select a topic
-    const t1Button = screen.getByText('Operating Procedures').closest('button');
+
+    // Select a topic (T1 = Commission's Rules)
+    const t1Button = screen.getByText("Commission's Rules").closest('button');
     if (t1Button) fireEvent.click(t1Button);
     
     await waitFor(() => {

@@ -184,19 +184,19 @@ export default function Dashboard() {
   // Render content based on view
   const renderContent = () => {
     if (currentView === 'practice-test') {
-      return <PracticeTest onBack={() => changeView('dashboard')} onTestStateChange={setTestInProgress} />;
+      return <PracticeTest onBack={() => changeView('dashboard')} onTestStateChange={setTestInProgress} testType={selectedTest} />;
     }
     if (currentView === 'random-practice') {
-      return <RandomPractice onBack={() => changeView('dashboard')} />;
+      return <RandomPractice onBack={() => changeView('dashboard')} testType={selectedTest} />;
     }
     if (currentView === 'weak-questions') {
-      return <WeakQuestionsReview weakQuestionIds={weakQuestionIds} onBack={() => changeView('dashboard')} />;
+      return <WeakQuestionsReview weakQuestionIds={weakQuestionIds} onBack={() => changeView('dashboard')} testType={selectedTest} />;
     }
     if (currentView === 'bookmarks') {
-      return <BookmarkedQuestions onBack={() => changeView('dashboard')} onStartPractice={() => changeView('random-practice')} />;
+      return <BookmarkedQuestions onBack={() => changeView('dashboard')} onStartPractice={() => changeView('random-practice')} testType={selectedTest} />;
     }
     if (currentView === 'subelement-practice') {
-      return <SubelementPractice onBack={() => changeView('dashboard')} />;
+      return <SubelementPractice onBack={() => changeView('dashboard')} testType={selectedTest} />;
     }
     if (currentView === 'review-test' && reviewingTestId) {
       return <TestResultReview testResultId={reviewingTestId} onBack={() => {

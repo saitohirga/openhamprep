@@ -10,6 +10,7 @@ import { SkipForward, RotateCcw, Loader2, ChevronRight, CheckCircle, ArrowLeft, 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TopicLanding } from "@/components/TopicLanding";
+import { TestType } from "@/types/navigation";
 
 interface HistoryEntry {
   question: Question;
@@ -19,36 +20,68 @@ interface HistoryEntry {
 
 interface SubelementPracticeProps {
   onBack: () => void;
+  testType: TestType;
 }
 
 type TopicView = 'list' | 'landing' | 'practice';
 
-const SUBELEMENT_NAMES: Record<string, string> = {
-  T0: "Commission's Rules",
-  T1: "Operating Procedures",
-  T2: "Radio Wave Characteristics",
-  T3: "Radio Wave Propagation",
-  T4: "Amateur Radio Practices",
-  T5: "Electrical Principles",
-  T6: "Electronic Components",
-  T7: "Station Equipment",
-  T8: "Operating Activities",
-  T9: "Antennas & Feed Lines"
+const SUBELEMENT_NAMES: Record<string, Record<string, string>> = {
+  technician: {
+    T0: "Safety",
+    T1: "Commission's Rules",
+    T2: "Operating Procedures",
+    T3: "Radio Wave Characteristics",
+    T4: "Amateur Radio Practices",
+    T5: "Electrical Principles",
+    T6: "Electronic Components",
+    T7: "Station Equipment",
+    T8: "Operating Activities",
+    T9: "Antennas & Feed Lines"
+  },
+  general: {
+    G0: "Safety",
+    G1: "Commission's Rules",
+    G2: "Operating Procedures",
+    G3: "Radio Wave Propagation",
+    G4: "Amateur Radio Practices",
+    G5: "Electrical Principles",
+    G6: "Circuit Components",
+    G7: "Practical Circuits",
+    G8: "Signals and Emissions",
+    G9: "Antennas & Feed Lines"
+  },
+  extra: {
+    E0: "Safety",
+    E1: "Commission's Rules",
+    E2: "Operating Procedures",
+    E3: "Radio Wave Propagation",
+    E4: "Amateur Practices",
+    E5: "Electrical Principles",
+    E6: "Circuit Components",
+    E7: "Practical Circuits",
+    E8: "Signals and Emissions",
+    E9: "Antennas & Transmission Lines"
+  }
 };
 
 export function SubelementPractice({
-  onBack
+  onBack,
+  testType
 }: SubelementPracticeProps) {
   const {
     data: allQuestions,
     isLoading,
     error
-  } = useQuestions();
+  } = useQuestions(testType);
   const {
     saveRandomAttempt
   } = useProgress();
   const { capture } = usePostHog();
-  
+
+  // Get subelement names for the current test type
+  const subelementNames = SUBELEMENT_NAMES[testType] || {};
+  const getSubelementName = (sub: string) => subelementNames[sub] || `Subelement ${sub}`;
+
   const [selectedSubelement, setSelectedSubelement] = useState<string | null>(null);
   const [topicView, setTopicView] = useState<TopicView>('list');
   const [stats, setStats] = useState({
@@ -116,9 +149,9 @@ export function SubelementPractice({
     });
     setAskedIds([]);
     
-    capture(ANALYTICS_EVENTS.TOPIC_SELECTED, { 
-      subelement: sub, 
-      topic_name: SUBELEMENT_NAMES[sub] || sub 
+    capture(ANALYTICS_EVENTS.TOPIC_SELECTED, {
+      subelement: sub,
+      topic_name: getSubelementName(sub)
     });
   };
 
@@ -129,9 +162,9 @@ export function SubelementPractice({
       setQuestionHistory([{ question: firstQuestion, selectedAnswer: null, showResult: false }]);
       setHistoryIndex(0);
     }
-    capture(ANALYTICS_EVENTS.SUBELEMENT_PRACTICE_STARTED, { 
+    capture(ANALYTICS_EVENTS.SUBELEMENT_PRACTICE_STARTED, {
       subelement: selectedSubelement,
-      topic_name: SUBELEMENT_NAMES[selectedSubelement || ''] || selectedSubelement 
+      topic_name: getSubelementName(selectedSubelement || '')
     });
   };
 
@@ -290,7 +323,7 @@ export function SubelementPractice({
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">
-                          {SUBELEMENT_NAMES[sub] || `Subelement ${sub}`}
+                          {getSubelementName(sub)}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {count} questions
@@ -308,7 +341,7 @@ export function SubelementPractice({
 
   // Show topic landing page
   if (topicView === 'landing') {
-    return <TopicLanding subelement={selectedSubelement} subelementName={SUBELEMENT_NAMES[selectedSubelement] || `Subelement ${selectedSubelement}`} questions={currentQuestions} onBack={handleBackToList} onStartPractice={handleStartPractice} />;
+    return <TopicLanding subelement={selectedSubelement} subelementName={getSubelementName(selectedSubelement || '')} questions={currentQuestions} onBack={handleBackToList} onStartPractice={handleStartPractice} />;
   }
 
   // Show practice view
@@ -336,7 +369,7 @@ export function SubelementPractice({
               <span className="font-mono font-bold">{selectedSubelement}</span>
               <span className="text-muted-foreground">•</span>
               <span className="text-sm text-muted-foreground">
-                {SUBELEMENT_NAMES[selectedSubelement] || `Subelement ${selectedSubelement}`}
+                {getSubelementName(selectedSubelement || '')}
               </span>
             </div>
           </div>

@@ -92,16 +92,17 @@ const createTestQueryClient = () =>
 const renderBookmarkedQuestions = (props = {}) => {
   const queryClient = createTestQueryClient();
   const onBack = vi.fn();
-  
+  const onStartPractice = vi.fn();
+
   const result = render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BookmarkedQuestions onBack={onBack} {...props} />
+        <BookmarkedQuestions onBack={onBack} onStartPractice={onStartPractice} testType="technician" {...props} />
       </TooltipProvider>
     </QueryClientProvider>
   );
-  
-  return { ...result, onBack };
+
+  return { ...result, onBack, onStartPractice };
 };
 
 describe('BookmarkedQuestions', () => {

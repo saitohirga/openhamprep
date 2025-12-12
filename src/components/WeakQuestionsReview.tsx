@@ -9,13 +9,16 @@ import { useKeyboardShortcuts, KeyboardShortcut } from "@/hooks/useKeyboardShort
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { AlertTriangle, SkipForward, RotateCcw, Loader2, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { TestType } from "@/types/navigation";
 interface WeakQuestionsReviewProps {
   weakQuestionIds: string[];
   onBack: () => void;
+  testType: TestType;
 }
 export function WeakQuestionsReview({
   weakQuestionIds,
-  onBack
+  onBack,
+  testType
 }: WeakQuestionsReviewProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -23,7 +26,7 @@ export function WeakQuestionsReview({
     data: allQuestions,
     isLoading,
     error
-  } = useQuestions();
+  } = useQuestions(testType);
   const {
     saveRandomAttempt
   } = useProgress();

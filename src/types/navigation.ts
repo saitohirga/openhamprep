@@ -14,6 +14,6 @@ export type TestType = 'technician' | 'general' | 'extra';
 
 export const testTypes = [
   { id: 'technician' as TestType, name: 'Technician', available: true },
-  { id: 'general' as TestType, name: 'General', available: false },
+  { id: 'general' as TestType, name: 'General', available: true },
   { id: 'extra' as TestType, name: 'Amateur Extra', available: false },
 ];

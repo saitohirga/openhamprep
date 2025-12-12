@@ -14,9 +14,11 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TestType } from "@/types/navigation";
 interface PracticeTestProps {
   onBack: () => void;
   onTestStateChange?: (inProgress: boolean) => void;
+  testType: TestType;
 }
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -37,13 +39,14 @@ function formatTime(seconds: number): string {
 }
 export function PracticeTest({
   onBack,
-  onTestStateChange
+  onTestStateChange,
+  testType
 }: PracticeTestProps) {
   const {
     data: allQuestions,
     isLoading,
     error
-  } = useQuestions();
+  } = useQuestions(testType);
   const {
     saveTestResult
   } = useProgress();

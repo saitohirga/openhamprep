@@ -7,20 +7,23 @@ import { useKeyboardShortcuts, KeyboardShortcut } from "@/hooks/useKeyboardShort
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { Bookmark, Loader2, Trash2, MessageSquare, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { TestType } from "@/types/navigation";
 
 
 interface BookmarkedQuestionsProps {
   onBack: () => void;
   onStartPractice: () => void;
+  testType: TestType;
 }
 export function BookmarkedQuestions({
   onBack,
-  onStartPractice
+  onStartPractice,
+  testType
 }: BookmarkedQuestionsProps) {
   const {
     data: allQuestions,
     isLoading: questionsLoading
-  } = useQuestions();
+  } = useQuestions(testType);
   const {
     bookmarks,
     isLoading: bookmarksLoading,
