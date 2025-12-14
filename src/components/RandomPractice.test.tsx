@@ -226,8 +226,8 @@ describe('RandomPractice', () => {
 
   describe('Loading and Error States', () => {
     it('shows loading state', () => {
-      // Override the mock to return loading state
-      mockQuestionsHook.mockReturnValueOnce({
+      // Override the mock to return loading state (use mockReturnValue to persist across re-renders)
+      mockQuestionsHook.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
@@ -237,6 +237,13 @@ describe('RandomPractice', () => {
 
       // Component should handle loading gracefully
       expect(screen.queryByText(/loading/i)).toBeInTheDocument();
+
+      // Reset to default mock
+      mockQuestionsHook.mockReturnValue({
+        data: mockQuestions,
+        isLoading: false,
+        error: null,
+      });
     });
   });
 

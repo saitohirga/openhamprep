@@ -185,8 +185,8 @@ describe('SubelementPractice', () => {
 
   describe('Loading State', () => {
     it('shows loading state when questions are loading', () => {
-      // Override the mock to return loading state
-      mockQuestionsHook.mockReturnValueOnce({
+      // Override the mock to return loading state (use mockReturnValue to persist across re-renders)
+      mockQuestionsHook.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
@@ -195,13 +195,20 @@ describe('SubelementPractice', () => {
       renderSubelementPractice();
 
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
+
+      // Reset to default mock
+      mockQuestionsHook.mockReturnValue({
+        data: mockQuestions,
+        isLoading: false,
+        error: null,
+      });
     });
   });
 
   describe('Error State', () => {
     it('shows error state when questions fail to load', () => {
-      // Override the mock to return error state
-      mockQuestionsHook.mockReturnValueOnce({
+      // Override the mock to return error state (use mockReturnValue to persist across re-renders)
+      mockQuestionsHook.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: new Error('Failed to load'),
@@ -211,6 +218,13 @@ describe('SubelementPractice', () => {
 
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
+
+      // Reset to default mock
+      mockQuestionsHook.mockReturnValue({
+        data: mockQuestions,
+        isLoading: false,
+        error: null,
+      });
     });
   });
 });

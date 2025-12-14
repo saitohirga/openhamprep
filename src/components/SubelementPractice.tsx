@@ -100,6 +100,16 @@ export function SubelementPractice({
   const selectedAnswer = currentEntry?.selectedAnswer || null;
   const showResult = currentEntry?.showResult || false;
 
+  // Reset state when test type changes
+  useEffect(() => {
+    setSelectedSubelement(null);
+    setTopicView('list');
+    setQuestionHistory([]);
+    setHistoryIndex(-1);
+    setStats({ correct: 0, total: 0 });
+    setAskedIds([]);
+  }, [testType]);
+
   // Group questions by subelement
   const questionsBySubelement = useMemo(() => {
     if (!allQuestions) return {};

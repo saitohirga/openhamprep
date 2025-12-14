@@ -148,8 +148,8 @@ describe('BookmarkedQuestions', () => {
 
   describe('Empty State', () => {
     it('shows empty state when no bookmarks exist', () => {
-      // Override the mock to return empty bookmarks
-      mockBookmarksHook.mockReturnValueOnce({
+      // Override the mock to return empty bookmarks (use mockReturnValue to persist across re-renders)
+      mockBookmarksHook.mockReturnValue({
         bookmarks: [],
         isLoading: false,
         isBookmarked: vi.fn(() => false),
@@ -164,6 +164,17 @@ describe('BookmarkedQuestions', () => {
       expect(screen.getByText('No bookmarks yet')).toBeInTheDocument();
       expect(screen.getByText('Bookmark questions during practice to review them later')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /start practicing/i })).toBeInTheDocument();
+
+      // Reset to default mock
+      mockBookmarksHook.mockReturnValue({
+        bookmarks: mockBookmarks,
+        isLoading: false,
+        isBookmarked: vi.fn((id: string) => mockBookmarks.some(b => b.question_id === id)),
+        addBookmark: { mutate: vi.fn() },
+        removeBookmark: mockRemoveBookmark,
+        getBookmarkNote: vi.fn((id: string) => mockBookmarks.find(b => b.question_id === id)?.note || null),
+        updateNote: { mutate: vi.fn() },
+      });
     });
   });
 
@@ -272,8 +283,8 @@ describe('BookmarkedQuestions', () => {
 
   describe('Loading State', () => {
     it('shows loading state when bookmarks are loading', () => {
-      // Override the mock to return loading state
-      mockBookmarksHook.mockReturnValueOnce({
+      // Override the mock to return loading state (use mockReturnValue to persist across re-renders)
+      mockBookmarksHook.mockReturnValue({
         bookmarks: undefined,
         isLoading: true,
         isBookmarked: vi.fn(() => false),
@@ -286,6 +297,17 @@ describe('BookmarkedQuestions', () => {
       renderBookmarkedQuestions();
 
       expect(screen.getByText(/loading bookmarks/i)).toBeInTheDocument();
+
+      // Reset to default mock
+      mockBookmarksHook.mockReturnValue({
+        bookmarks: mockBookmarks,
+        isLoading: false,
+        isBookmarked: vi.fn((id: string) => mockBookmarks.some(b => b.question_id === id)),
+        addBookmark: { mutate: vi.fn() },
+        removeBookmark: mockRemoveBookmark,
+        getBookmarkNote: vi.fn((id: string) => mockBookmarks.find(b => b.question_id === id)?.note || null),
+        updateNote: { mutate: vi.fn() },
+      });
     });
   });
 });
