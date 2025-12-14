@@ -113,7 +113,8 @@ describe('useOnboarding', () => {
 
   describe('completeOnboarding', () => {
     it('should update state and call database when completing onboarding', async () => {
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
+      const mockUpdateSelect = vi.fn().mockResolvedValue({ error: null });
+      const mockEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
       const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -152,7 +153,8 @@ describe('useOnboarding', () => {
 
   describe('skipOnboarding', () => {
     it('should update state and call database when skipping onboarding', async () => {
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
+      const mockUpdateSelect = vi.fn().mockResolvedValue({ error: null });
+      const mockEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
       const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -191,7 +193,8 @@ describe('useOnboarding', () => {
 
   describe('resetOnboarding', () => {
     it('should reset state and call database', async () => {
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
+      const mockUpdateSelect = vi.fn().mockResolvedValue({ error: null });
+      const mockEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
       const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -369,7 +372,8 @@ describe('useOnboarding', () => {
     it('should handle update error gracefully and still update state optimistically', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const mockEq = vi.fn().mockResolvedValue({ error: { message: 'Update failed' } });
+      const mockUpdateSelect = vi.fn().mockResolvedValue({ error: { message: 'Update failed' } });
+      const mockEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
       const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -412,9 +416,9 @@ describe('useOnboarding', () => {
     it('should handle update exception gracefully and still update state optimistically', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockRejectedValue(new Error('Network error')),
-      });
+      const mockUpdateSelect = vi.fn().mockRejectedValue(new Error('Network error'));
+      const mockEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
       const mockSelect = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
