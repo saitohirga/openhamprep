@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -164,4 +164,138 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
   }
+}
+
+/* Shepherd.js Custom Theme */
+.shepherd-element {
+  z-index: 9999;
+}
+
+.shepherd-modal-overlay-container {
+  z-index: 9998;
+}
+
+/* Reset all Shepherd default styles */
+.shepherd-element.shepherd-theme-custom {
+  --shepherd-bg: hsl(var(--card));
+  --shepherd-text: hsl(var(--card-foreground));
+  --shepherd-border: hsl(var(--border));
+  background: hsl(var(--card)) !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3) !important;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+/* Remove the default top colored bar */
+.shepherd-element.shepherd-theme-custom .shepherd-content {
+  padding: 0;
+  background: hsl(var(--card)) !important;
+  border-top: none !important;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-header {
+  background: hsl(var(--card)) !important;
+  padding: 1rem 1rem 0.5rem 1rem;
+  border: none !important;
+}
+
+/* Aggressively remove any pseudo-elements that might create the bar */
+.shepherd-element.shepherd-theme-custom::before,
+.shepherd-element.shepherd-theme-custom::after,
+.shepherd-element.shepherd-theme-custom *::before,
+.shepherd-element.shepherd-theme-custom *::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  border: none !important;
+}
+
+/* Re-enable the cancel icon */
+.shepherd-element.shepherd-theme-custom .shepherd-cancel-icon::before {
+  display: inline !important;
+  content: '×' !important;
+}
+
+/* Hide any progress indicators */
+.shepherd-progress,
+[class*="shepherd-progress"],
+.shepherd-element [class*="progress"] {
+  display: none !important;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin: 0;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-cancel-icon {
+  color: hsl(var(--muted-foreground));
+  font-size: 1.5rem;
+  font-weight: 300;
+  transition: color 0.2s;
+  background: none !important;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-cancel-icon:hover {
+  color: hsl(var(--foreground));
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-text {
+  padding: 0.5rem 1rem 1rem 1rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-footer {
+  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background: hsl(var(--card)) !important;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-button {
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-button-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-button-primary:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-button-secondary {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-button-secondary:hover {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+}
+
+.shepherd-element.shepherd-theme-custom .shepherd-arrow::before {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* Modal overlay styling */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  opacity: 0.6;
 }
