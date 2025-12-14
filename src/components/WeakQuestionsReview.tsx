@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/QuestionCard";
@@ -40,6 +40,15 @@ export function WeakQuestionsReview({
   });
   const [completed, setCompleted] = useState(false);
   const currentQuestion = weakQuestions[currentIndex];
+
+  // Reset state when test type changes
+  useEffect(() => {
+    setCurrentIndex(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setStats({ correct: 0, total: 0 });
+    setCompleted(false);
+  }, [testType]);
 
   const handleSelectAnswer = useCallback(async (answer: 'A' | 'B' | 'C' | 'D') => {
     if (showResult || !currentQuestion) return;

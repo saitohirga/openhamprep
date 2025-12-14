@@ -94,6 +94,16 @@ export function RandomPractice({
     loadBestStreak();
   }, [user]);
 
+  // Reset state when test type changes
+  useEffect(() => {
+    setQuestionHistory([]);
+    setHistoryIndex(-1);
+    setAskedIds([]);
+    setStats({ correct: 0, total: 0 });
+    setStreak(0);
+    setBestStreak(allTimeBestStreak);
+  }, [testType]);
+
   // Save best streak to database when it's beaten
   const saveBestStreak = async (newBestStreak: number) => {
     if (!user) return;

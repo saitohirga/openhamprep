@@ -70,6 +70,17 @@ export function PracticeTest({
     onTestStateChange?.(hasStarted && !isFinished);
   }, [hasStarted, isFinished, onTestStateChange]);
 
+  // Reset state when test type changes
+  useEffect(() => {
+    setHasStarted(false);
+    setQuestions([]);
+    setCurrentIndex(0);
+    setAnswers({});
+    setIsFinished(false);
+    setTimerEnabled(false);
+    setTimeRemaining(120 * 60);
+  }, [testType]);
+
   // Timer effect
   useEffect(() => {
     if (!timerEnabled || isFinished || !hasStarted) return;

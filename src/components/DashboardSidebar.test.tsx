@@ -102,10 +102,102 @@ describe('DashboardSidebar', () => {
   });
 
   describe('License Class Selector', () => {
-    it('displays license class selector', () => {
+    it('displays license class label', () => {
       render(<DashboardSidebar {...defaultProps} />, { wrapper: createWrapper() });
 
       expect(screen.getByText('License Class')).toBeInTheDocument();
+    });
+
+    it('displays current license name', () => {
+      render(<DashboardSidebar {...defaultProps} selectedTest="technician" />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Technician')).toBeInTheDocument();
+    });
+
+    it('displays General when selected', () => {
+      render(<DashboardSidebar {...defaultProps} selectedTest="general" />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('General')).toBeInTheDocument();
+    });
+
+    it('displays Amateur Extra when selected', () => {
+      render(<DashboardSidebar {...defaultProps} selectedTest="extra" />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('Amateur Extra')).toBeInTheDocument();
+    });
+
+    it('opens license select modal when clicked', async () => {
+      const user = userEvent.setup();
+      render(<DashboardSidebar {...defaultProps} />, { wrapper: createWrapper() });
+
+      // Click the license selector button
+      const licenseButton = screen.getByText('Technician').closest('button');
+      await user.click(licenseButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText('Select License Class')).toBeInTheDocument();
+      });
+    });
+
+    it('shows all license options in modal', async () => {
+      const user = userEvent.setup();
+      render(<DashboardSidebar {...defaultProps} />, { wrapper: createWrapper() });
+
+      // Click the license selector button
+      const licenseButton = screen.getByText('Technician').closest('button');
+      await user.click(licenseButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText('Select License Class')).toBeInTheDocument();
+      });
+
+      // Check all three options are visible in modal
+      expect(screen.getByText(/Entry-level license/)).toBeInTheDocument();
+      expect(screen.getByText(/Expanded HF privileges/)).toBeInTheDocument();
+      expect(screen.getByText(/Full amateur privileges/)).toBeInTheDocument();
+    });
+
+    it('calls onTestChange when license is changed via modal', async () => {
+      const user = userEvent.setup();
+      const onTestChange = vi.fn();
+      render(<DashboardSidebar {...defaultProps} onTestChange={onTestChange} selectedTest="technician" />, { wrapper: createWrapper() });
+
+      // Open modal
+      const licenseButton = screen.getByText('Technician').closest('button');
+      await user.click(licenseButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText('Select License Class')).toBeInTheDocument();
+      });
+
+      // Select General
+      const generalCard = screen.getByText(/Expanded HF privileges/).closest('button');
+      await user.click(generalCard!);
+
+      // Confirm change
+      await user.click(screen.getByRole('button', { name: /change license/i }));
+
+      expect(onTestChange).toHaveBeenCalledWith('general');
+    });
+
+    it('closes modal when Cancel is clicked', async () => {
+      const user = userEvent.setup();
+      render(<DashboardSidebar {...defaultProps} />, { wrapper: createWrapper() });
+
+      // Open modal
+      const licenseButton = screen.getByText('Technician').closest('button');
+      await user.click(licenseButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText('Select License Class')).toBeInTheDocument();
+      });
+
+      // Click Cancel
+      await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Select License Class')).not.toBeInTheDocument();
+      });
     });
   });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/QuestionCard";
 import { useQuestions, Question } from "@/hooks/useQuestions";
@@ -36,6 +36,13 @@ export function BookmarkedQuestions({
   const bookmarkedQuestions = allQuestions?.filter(q => bookmarks?.some(b => b.question_id === q.id)) || [];
   const selectedQuestion = bookmarkedQuestions.find(q => q.id === selectedQuestionId);
   const selectedBookmark = bookmarks?.find(b => b.question_id === selectedQuestionId);
+
+  // Reset state when test type changes
+  useEffect(() => {
+    setSelectedQuestionId(null);
+    setSelectedAnswer(null);
+    setShowResult(false);
+  }, [testType]);
 
   // Keyboard shortcuts for bookmarked question view - must be before any early returns
   const handleAnswerSelect = (answer: 'A' | 'B' | 'C' | 'D') => {

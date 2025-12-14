@@ -1,4 +1,4 @@
-import { Play, Zap, BookOpen, AlertTriangle, Bookmark, LogOut, Radio, PanelLeftClose, PanelLeft, BarChart3, Menu, Lock, ChevronDown, BookText, Shield, MapPin, Users, ExternalLink } from "lucide-react";
+import { Play, Zap, BookOpen, AlertTriangle, Bookmark, LogOut, Radio, PanelLeftClose, PanelLeft, BarChart3, Menu, Lock, ChevronDown, BookText, Shield, MapPin, Users, ExternalLink, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileModal } from "@/components/ProfileModal";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { View, TestType, testTypes } from "@/types/navigation";
+import { LicenseSelectModal } from "@/components/LicenseSelectModal";
 interface NavItem {
   id: View;
   label: string;
@@ -55,6 +55,7 @@ export function DashboardSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+  const [licenseModalOpen, setLicenseModalOpen] = useState(false);
   const {
     isAdmin
   } = useAdmin();
@@ -118,6 +119,13 @@ export function DashboardSidebar({
     }
   };
   const currentTest = testTypes.find(t => t.id === selectedTest);
+
+  const licenseIcons: Record<TestType, React.ElementType> = {
+    technician: Radio,
+    general: Zap,
+    extra: Award,
+  };
+  const CurrentLicenseIcon = licenseIcons[selectedTest];
   const NavContent = ({
     isMobile = false
   }: {
@@ -156,36 +164,29 @@ export function DashboardSidebar({
       <div className={cn("border-b border-border", !isMobile && isCollapsed ? "p-2" : "p-3")}>
         {isMobile || !isCollapsed ? <div>
             <label className="text-xs text-muted-foreground font-medium mb-1.5 block">License Class</label>
-            <Select value={selectedTest} onValueChange={v => {
-          const test = testTypes.find(t => t.id === v);
-          if (test?.available) {
-            onTestChange(v as TestType);
-          }
-        }}>
-              <SelectTrigger className="w-full bg-secondary/50 border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border z-50">
-                {testTypes.map(test => <SelectItem key={test.id} value={test.id} disabled={!test.available} className={cn(!test.available && "opacity-50 cursor-not-allowed")}>
-                    <span className="flex items-center gap-2">
-                      {test.name}
-                      {!test.available && <span className="text-[10px] text-muted-foreground ml-1">(Coming Soon)</span>}
-                    </span>
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-            {!currentTest?.available && <span className="text-[10px] text-muted-foreground mt-1 block">
-                Coming Soon
-              </span>}
+            <button
+              onClick={() => setLicenseModalOpen(true)}
+              className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-secondary/50 border border-border hover:bg-secondary hover:border-muted-foreground/50 transition-colors text-left"
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                <CurrentLicenseIcon className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-foreground">{currentTest?.name}</span>
+              </div>
+            </button>
           </div> : <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-              <button className="w-full flex items-center justify-center p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors">
-                <span className="text-xs font-bold text-primary">{selectedTest[0].toUpperCase()}</span>
+              <button
+                onClick={() => setLicenseModalOpen(true)}
+                className="w-full flex items-center justify-center p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
+              >
+                <CurrentLicenseIcon className="w-4 h-4 text-primary" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="bg-popover border-border">
               <p className="font-medium">{currentTest?.name}</p>
-              {!currentTest?.available && <p className="text-xs text-muted-foreground">Coming Soon</p>}
+              <p className="text-xs text-muted-foreground">Click to change</p>
             </TooltipContent>
           </Tooltip>}
       </div>
@@ -359,6 +360,14 @@ export function DashboardSidebar({
       displayName: userInfo.displayName,
       email: userInfo.email
     }} userId={userId} onProfileUpdate={onProfileUpdate} />}
+
+      {/* License Select Modal */}
+      <LicenseSelectModal
+        open={licenseModalOpen}
+        onOpenChange={setLicenseModalOpen}
+        selectedTest={selectedTest}
+        onTestChange={onTestChange}
+      />
 
       {/* Mobile Hamburger Button */}
       <div className="md:hidden fixed top-4 left-4 z-50">

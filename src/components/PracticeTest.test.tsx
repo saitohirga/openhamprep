@@ -322,8 +322,8 @@ describe('PracticeTest', () => {
 
 describe('PracticeTest Loading State', () => {
   it('shows loading state when questions are loading', () => {
-    // Override the mock to return loading state
-    mockQuestionsHook.mockReturnValueOnce({
+    // Override the mock to return loading state (use mockReturnValue to persist across re-renders)
+    mockQuestionsHook.mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
@@ -332,5 +332,12 @@ describe('PracticeTest Loading State', () => {
     renderPracticeTest();
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
+
+    // Reset to default mock
+    mockQuestionsHook.mockReturnValue({
+      data: mockQuestions,
+      isLoading: false,
+      error: null,
+    });
   });
 });
