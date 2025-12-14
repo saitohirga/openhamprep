@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
+// Use environment variable - gracefully disabled if not set
+const PENDO_API_KEY = import.meta.env.VITE_PENDO_API_KEY || '';
+
 interface PendoContextType {
   track: (event: string, properties?: Record<string, unknown>) => void;
   isReady: boolean;
@@ -28,22 +31,67 @@ declare global {
 }
 
 let isInitialized = false;
+let isScriptLoaded = false;
+
+function loadPendoScript(apiKey: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (isScriptLoaded) {
+      resolve();
+      return;
+    }
+
+    // Use the official Pendo snippet approach
+    (function(p: Window, e: Document, n: string, d: string, o?: { _q?: unknown[] }) {
+      o = p[d as keyof Window] = p[d as keyof Window] || {};
+      (o as { _q: unknown[] })._q = (o as { _q: unknown[] })._q || [];
+      const v = ['initialize', 'identify', 'updateOptions', 'pageLoad', 'track'];
+      for (let w = 0, x = v.length; w < x; ++w) {
+        (function(m) {
+          (o as Record<string, unknown>)[m] = (o as Record<string, unknown>)[m] || function() {
+            ((o as { _q: unknown[] })._q)[m === v[0] ? 'unshift' : 'push']([m].concat([].slice.call(arguments, 0)));
+          };
+        })(v[w]);
+      }
+      const y = e.createElement(n) as HTMLScriptElement;
+      y.async = true;
+      y.src = 'https://cdn.pendo.io/agent/static/' + apiKey + '/pendo.js';
+      y.onload = () => {
+        isScriptLoaded = true;
+        resolve();
+      };
+      y.onerror = reject;
+      const z = e.getElementsByTagName(n)[0];
+      z.parentNode?.insertBefore(y, z);
+    })(window, document, 'script', 'pendo');
+  });
+}
 
 export function PendoProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Only initialize and track when user is authenticated and pendo is loaded
-    if (user?.email && window.pendo) {
-      if (!isInitialized) {
-        window.pendo.initialize({
-          visitor: {
-            id: user.id,
-            email: user.email,
-          },
+    // Skip if Pendo key is not configured
+    if (!PENDO_API_KEY) {
+      return;
+    }
+
+    // Only initialize and track when user is authenticated
+    if (user?.email) {
+      loadPendoScript(PENDO_API_KEY)
+        .then(() => {
+          if (!isInitialized && window.pendo) {
+            window.pendo.initialize({
+              visitor: {
+                id: user.id,
+                email: user.email,
+              },
+            });
+            isInitialized = true;
+          }
+        })
+        .catch((error) => {
+          console.warn('Failed to load Pendo:', error);
         });
-        isInitialized = true;
-      }
     } else if (!user && isInitialized) {
       // Reset when user logs out
       isInitialized = false;
@@ -51,7 +99,7 @@ export function PendoProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const track = useCallback((event: string, properties?: Record<string, unknown>) => {
-    if (user && isInitialized && window.pendo) {
+    if (PENDO_API_KEY && user && isInitialized && window.pendo) {
       window.pendo.track(event, properties);
     }
   }, [user]);

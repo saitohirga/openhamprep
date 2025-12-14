@@ -2,8 +2,9 @@ import { createContext, useContext, useEffect, ReactNode, useCallback } from 're
 import posthog from 'posthog-js';
 import { useAuth } from './useAuth';
 
-const POSTHOG_KEY = 'phc_dADgppY50Dyh9adNuDYcGFoJ9JwaAubQMOagrqAMbv5';
-const POSTHOG_HOST = 'https://us.i.posthog.com';
+// Use environment variables - gracefully disabled if not set
+const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY || '';
+const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
 
 interface PostHogContextType {
   capture: (event: string, properties?: Record<string, unknown>) => void;
@@ -18,6 +19,11 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Skip if PostHog key is not configured
+    if (!POSTHOG_KEY) {
+      return;
+    }
+
     // Only initialize and track when user is authenticated
     if (user?.email) {
       if (!isInitialized) {
@@ -44,7 +50,7 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const capture = useCallback((event: string, properties?: Record<string, unknown>) => {
-    if (user && isInitialized) {
+    if (POSTHOG_KEY && user && isInitialized) {
       posthog.capture(event, properties);
     }
   }, [user]);
