@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { useUserTargetExam } from '@/hooks/useExamSessions';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAppTour } from '@/hooks/useAppTour';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateWeakQuestionIds } from '@/lib/weakQuestions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,6 +25,7 @@ import { Glossary } from '@/components/Glossary';
 import { GlossaryFlashcards } from '@/components/GlossaryFlashcards';
 import { WeeklyGoalsModal } from '@/components/WeeklyGoalsModal';
 import { ExamSessionSearch } from '@/components/ExamSessionSearch';
+import { WelcomeModal } from '@/components/WelcomeModal';
 import { TestType, testTypes, View } from '@/types/navigation';
 export default function Dashboard() {
   const {
@@ -55,6 +58,46 @@ export default function Dashboard() {
   const [pendingView, setPendingView] = useState<typeof currentView | null>(null);
   const [showNavigationWarning, setShowNavigationWarning] = useState(false);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
+
+  // Onboarding
+  const {
+    showOnboarding,
+    setShowOnboarding,
+    completeOnboarding,
+    skipOnboarding,
+  } = useOnboarding();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  const { startTour } = useAppTour({
+    onComplete: completeOnboarding,
+    onCancel: skipOnboarding,
+  });
+
+  // Show welcome modal when onboarding should start
+  useEffect(() => {
+    if (showOnboarding && user && !authLoading) {
+      // Small delay to ensure the dashboard has loaded
+      const timer = setTimeout(() => {
+        setShowWelcomeModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showOnboarding, user, authLoading]);
+
+  const handleWelcomeComplete = (selectedLicense: TestType) => {
+    setSelectedTest(selectedLicense);
+    setShowWelcomeModal(false);
+    setShowOnboarding(false);
+    // Start the tour after a short delay to let the modal close
+    setTimeout(() => {
+      startTour();
+    }, 300);
+  };
+
+  const handleWelcomeSkip = () => {
+    setShowWelcomeModal(false);
+    skipOnboarding();
+  };
 
   // Handle view from URL query parameter (only on initial load)
   useEffect(() => {
@@ -424,7 +467,7 @@ export default function Dashboard() {
         }} animate={{
           opacity: 1,
           y: 0
-        }} className={cn("rounded-xl p-5 mb-6 border-2", readinessLevel === 'ready' ? "bg-success/10 border-success/50" : readinessLevel === 'getting-close' ? "bg-primary/10 border-primary/50" : readinessLevel === 'needs-work' ? "bg-orange-500/10 border-orange-500/50" : "bg-secondary border-border")}>
+        }} data-tour="dashboard-readiness" className={cn("rounded-xl p-5 mb-6 border-2", readinessLevel === 'ready' ? "bg-success/10 border-success/50" : readinessLevel === 'getting-close' ? "bg-primary/10 border-primary/50" : readinessLevel === 'needs-work' ? "bg-orange-500/10 border-orange-500/50" : "bg-secondary border-border")}>
             <div className="flex items-center gap-4 mb-3">
               <div className={cn("w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-2xl font-bold", readinessLevel === 'ready' ? 'bg-success/20 text-success' : readinessLevel === 'getting-close' ? 'bg-primary/20 text-primary' : readinessLevel === 'needs-work' ? 'bg-orange-500/20 text-orange-500' : 'bg-secondary text-muted-foreground')}>
                 {recentAvgScore > 0 ? `${recentAvgScore}%` : '—'}
@@ -447,13 +490,26 @@ export default function Dashboard() {
               delay: 0.2
             }} className={cn("h-full rounded-full", readinessLevel === 'ready' ? 'bg-success' : readinessLevel === 'getting-close' ? 'bg-primary' : readinessLevel === 'needs-work' ? 'bg-orange-500' : 'bg-muted-foreground/30')} />
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Need 74% to pass</span>
               <span>{passedTests}/{totalTests} tests passed</span>
             </div>
-            
-            {/* Integrated Next Action */}
-            
+
+            {/* CTA for new users */}
+            {readinessLevel === 'not-started' && (
+              <div className="mt-4 pt-4 border-t border-border flex flex-col items-center">
+                <Button
+                  onClick={() => changeView('practice-test')}
+                  className="gap-2"
+                >
+                  <Target className="w-4 h-4" />
+                  Take Your First Practice Test
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  See where you stand and identify areas to focus on
+                </p>
+              </div>
+            )}
           </motion.div>
 
           {/* Weekly Goals */}
@@ -702,6 +758,13 @@ export default function Dashboard() {
       {user && <WeeklyGoalsModal open={showGoalsModal} onOpenChange={setShowGoalsModal} userId={user.id} currentGoals={weeklyGoals || null} onGoalsUpdated={() => queryClient.invalidateQueries({
       queryKey: ['weekly-goals', user.id]
     })} />}
+
+      {/* Welcome Modal for Onboarding */}
+      <WelcomeModal
+        open={showWelcomeModal}
+        onComplete={handleWelcomeComplete}
+        onSkip={handleWelcomeSkip}
+      />
 
       <AppLayout currentView={currentView} onViewChange={handleViewChange} selectedTest={selectedTest} onTestChange={setSelectedTest}>
         {renderContent()}

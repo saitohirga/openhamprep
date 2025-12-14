@@ -161,7 +161,7 @@ export function DashboardSidebar({
       </div>
 
       {/* Test Type Selector */}
-      <div className={cn("border-b border-border", !isMobile && isCollapsed ? "p-2" : "p-3")}>
+      <div className={cn("border-b border-border", !isMobile && isCollapsed ? "p-2" : "p-3")} data-tour="license-selector">
         {isMobile || !isCollapsed ? <div>
             <label className="text-xs text-muted-foreground font-medium mb-1.5 block">License Class</label>
             <button
@@ -198,7 +198,7 @@ export function DashboardSidebar({
         const isActive = !isOnAdminPage && currentView === item.id;
         const Icon = item.icon;
         const showExpanded = isMobile || !isCollapsed;
-        const buttonContent = <button onClick={() => handleNavClick(item.id, item.disabled)} disabled={item.disabled} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors", isActive ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-secondary", item.disabled && "opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground", !showExpanded && "justify-center px-2")}>
+        const buttonContent = <button onClick={() => handleNavClick(item.id, item.disabled)} disabled={item.disabled} data-tour={item.id} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors", isActive ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-secondary", item.disabled && "opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground", !showExpanded && "justify-center px-2")}>
               <div className="relative shrink-0">
                 <Icon className="w-5 h-5" />
                 {item.badge !== undefined && item.badge > 0 && <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
@@ -229,6 +229,7 @@ export function DashboardSidebar({
               href="https://forum.openhamprep.com/"
               target="_blank"
               rel="noopener noreferrer"
+              data-tour="forum"
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 "text-muted-foreground hover:text-foreground hover:bg-secondary",
