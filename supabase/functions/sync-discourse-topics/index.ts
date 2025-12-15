@@ -38,8 +38,9 @@ interface DiscourseCategory {
 
 interface SyncResult {
   questionId: string;
-  status: 'created' | 'skipped' | 'error';
+  status: 'created' | 'skipped' | 'error' | 'partial';
   topicId?: number;
+  topicUrl?: string;
   reason?: string;
 }
 
@@ -169,7 +170,7 @@ async function createDiscourseTopic(
   username: string,
   categoryId: number,
   question: Question
-): Promise<{ success: boolean; topicId?: number; error?: string }> {
+): Promise<{ success: boolean; topicId?: number; topicUrl?: string; error?: string }> {
   // Truncate title if needed (Discourse has a 255 char limit)
   let title = `${question.id} - ${question.question}`;
   if (title.length > MAX_TITLE_LENGTH) {
@@ -199,7 +200,10 @@ async function createDiscourseTopic(
     }
 
     const data = await response.json();
-    return { success: true, topicId: data.topic_id };
+    // Construct the topic URL from the response
+    // Discourse returns topic_id and topic_slug in the response
+    const topicUrl = `${DISCOURSE_URL}/t/${data.topic_slug}/${data.topic_id}`;
+    return { success: true, topicId: data.topic_id, topicUrl };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -451,8 +455,36 @@ serve(async (req) => {
       const result = await createDiscourseTopic(apiKey, username, categoryId, question as Question);
 
       if (result.success) {
-        results.push({ questionId: question.id, status: 'created', topicId: result.topicId });
-        created++;
+        // Save the forum URL to the database
+        let dbUpdateSuccess = true;
+        if (result.topicUrl) {
+          const { error: updateError } = await supabase
+            .from('questions')
+            .update({ forum_url: result.topicUrl })
+            .eq('id', question.id);
+
+          if (updateError) {
+            console.error(`Failed to save forum_url for ${question.id}: ${updateError.message}`);
+            dbUpdateSuccess = false;
+          } else {
+            console.log(`Saved forum_url for ${question.id}: ${result.topicUrl}`);
+          }
+        }
+
+        if (dbUpdateSuccess) {
+          results.push({ questionId: question.id, status: 'created', topicId: result.topicId, topicUrl: result.topicUrl });
+          created++;
+        } else {
+          // Topic was created but DB update failed - report as partial success
+          results.push({
+            questionId: question.id,
+            status: 'partial',
+            topicId: result.topicId,
+            topicUrl: result.topicUrl,
+            reason: 'Topic created in Discourse but failed to save forum_url to database'
+          });
+          errors++;
+        }
       } else {
         results.push({ questionId: question.id, status: 'error', reason: result.error });
         errors++;

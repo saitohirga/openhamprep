@@ -27,8 +27,9 @@ interface Question {
 
 interface SyncResult {
   questionId: string;
-  status: 'created' | 'skipped' | 'error';
+  status: 'created' | 'skipped' | 'error' | 'partial';
   topicId?: number;
+  topicUrl?: string;
   reason?: string;
 }
 
@@ -536,14 +537,16 @@ describe('sync-discourse-topics edge function', () => {
   });
 
   describe('SyncResult type', () => {
-    it('allows created status with topicId', () => {
+    it('allows created status with topicId and topicUrl', () => {
       const result: SyncResult = {
         questionId: 'T1A01',
         status: 'created',
         topicId: 12345,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01-question-text/12345',
       };
       expect(result.status).toBe('created');
       expect(result.topicId).toBe(12345);
+      expect(result.topicUrl).toBe('https://forum.openhamprep.com/t/t1a01-question-text/12345');
     });
 
     it('allows skipped status with reason', () => {
@@ -564,6 +567,135 @@ describe('sync-discourse-topics edge function', () => {
       };
       expect(result.status).toBe('error');
       expect(result.reason).toBe('API rate limited');
+    });
+
+    it('allows partial status when topic created but DB update failed', () => {
+      const result: SyncResult = {
+        questionId: 'T1A01',
+        status: 'partial',
+        topicId: 12345,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01-question-text/12345',
+        reason: 'Topic created in Discourse but failed to save forum_url to database',
+      };
+      expect(result.status).toBe('partial');
+      expect(result.topicId).toBe(12345);
+      expect(result.topicUrl).toBeDefined();
+      expect(result.reason).toContain('failed to save forum_url');
+    });
+
+    it('partial status includes topicId and topicUrl', () => {
+      const result: SyncResult = {
+        questionId: 'G2B03',
+        status: 'partial',
+        topicId: 67890,
+        topicUrl: 'https://forum.openhamprep.com/t/g2b03-general-question/67890',
+        reason: 'Topic created in Discourse but failed to save forum_url to database',
+      };
+      expect(result.topicId).toBe(67890);
+      expect(result.topicUrl).toBe('https://forum.openhamprep.com/t/g2b03-general-question/67890');
+    });
+  });
+
+  describe('Topic URL generation', () => {
+    const DISCOURSE_URL = 'https://forum.openhamprep.com';
+
+    it('generates correct topic URL from slug and id', () => {
+      const topicSlug = 't1a01-what-is-the-purpose-of-amateur-radio';
+      const topicId = 12345;
+      const expectedUrl = `${DISCOURSE_URL}/t/${topicSlug}/${topicId}`;
+
+      expect(expectedUrl).toBe('https://forum.openhamprep.com/t/t1a01-what-is-the-purpose-of-amateur-radio/12345');
+    });
+
+    it('handles slugs with special characters', () => {
+      const topicSlug = 't1a01-what-does-cq-mean';
+      const topicId = 456;
+      const url = `${DISCOURSE_URL}/t/${topicSlug}/${topicId}`;
+
+      expect(url).toBe('https://forum.openhamprep.com/t/t1a01-what-does-cq-mean/456');
+    });
+
+    it('handles numeric topic IDs', () => {
+      const topicId = 999999;
+      const url = `${DISCOURSE_URL}/t/slug/${topicId}`;
+
+      expect(url).toContain('/999999');
+    });
+
+    it('creates valid URL structure for all license types', () => {
+      const testCases = [
+        { id: 'T1A01', slug: 't1a01-tech-question', topicId: 100 },
+        { id: 'G2B03', slug: 'g2b03-general-question', topicId: 200 },
+        { id: 'E4C07', slug: 'e4c07-extra-question', topicId: 300 },
+      ];
+
+      testCases.forEach(({ id, slug, topicId }) => {
+        const url = `${DISCOURSE_URL}/t/${slug}/${topicId}`;
+        expect(url).toMatch(/^https:\/\/forum\.openhamprep\.com\/t\/[a-z0-9-]+\/\d+$/);
+        expect(url).toContain(id.toLowerCase());
+      });
+    });
+  });
+
+  describe('SyncResult with topicUrl for database updates', () => {
+    it('includes topicUrl when topic is successfully created', () => {
+      const result: SyncResult = {
+        questionId: 'T1A01',
+        status: 'created',
+        topicId: 12345,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01-question/12345',
+      };
+
+      // Simulates what would be saved to database
+      const dbUpdate = {
+        forum_url: result.topicUrl,
+      };
+
+      expect(dbUpdate.forum_url).toBe('https://forum.openhamprep.com/t/t1a01-question/12345');
+    });
+
+    it('does not include topicUrl for skipped questions', () => {
+      const result: SyncResult = {
+        questionId: 'T1A01',
+        status: 'skipped',
+        reason: 'already exists',
+      };
+
+      expect(result.topicUrl).toBeUndefined();
+    });
+
+    it('does not include topicUrl for error status', () => {
+      const result: SyncResult = {
+        questionId: 'T1A01',
+        status: 'error',
+        reason: 'API error',
+      };
+
+      expect(result.topicUrl).toBeUndefined();
+    });
+
+    it('validates topicUrl format matches Discourse URL structure', () => {
+      const result: SyncResult = {
+        questionId: 'G1A01',
+        status: 'created',
+        topicId: 789,
+        topicUrl: 'https://forum.openhamprep.com/t/g1a01-general-class-question/789',
+      };
+
+      // URL should match pattern: https://forum.openhamprep.com/t/{slug}/{id}
+      expect(result.topicUrl).toMatch(/^https:\/\/forum\.openhamprep\.com\/t\/[a-z0-9-]+\/\d+$/);
+    });
+
+    it('topicUrl and topicId should be consistent', () => {
+      const topicId = 54321;
+      const result: SyncResult = {
+        questionId: 'E1A01',
+        status: 'created',
+        topicId,
+        topicUrl: `https://forum.openhamprep.com/t/e1a01-extra-question/${topicId}`,
+      };
+
+      expect(result.topicUrl).toContain(topicId.toString());
     });
   });
 });
@@ -1297,7 +1429,7 @@ describe('Batch response structure', () => {
           estimatedBatchesRemaining: 28,
         },
         details: [
-          { questionId: 'T1A01', status: 'created', topicId: 123 },
+          { questionId: 'T1A01', status: 'created', topicId: 123, topicUrl: 'https://forum.openhamprep.com/t/t1a01-question/123' },
           { questionId: 'T1A02', status: 'error', reason: 'Rate limited' },
         ],
         nextAction: 'Call again with same parameters to process next batch of 50 topics',
@@ -1345,10 +1477,12 @@ describe('Batch response structure', () => {
         questionId: 'T1A01',
         status: 'created',
         topicId: 12345,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01-question-text/12345',
       };
 
       expect(detail.status).toBe('created');
       expect(detail.topicId).toBeDefined();
+      expect(detail.topicUrl).toBeDefined();
       expect(detail.reason).toBeUndefined();
     });
 
@@ -1362,6 +1496,66 @@ describe('Batch response structure', () => {
       expect(detail.status).toBe('error');
       expect(detail.reason).toBeDefined();
       expect(detail.topicId).toBeUndefined();
+    });
+
+    it('validates detail entry for partial status (DB update failure)', () => {
+      const detail: SyncResult = {
+        questionId: 'T1A01',
+        status: 'partial',
+        topicId: 12345,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01-question-text/12345',
+        reason: 'Topic created in Discourse but failed to save forum_url to database',
+      };
+
+      expect(detail.status).toBe('partial');
+      expect(detail.topicId).toBeDefined();
+      expect(detail.topicUrl).toBeDefined();
+      expect(detail.reason).toBeDefined();
+      expect(detail.reason).toContain('failed to save forum_url');
+    });
+
+    it('partial status counts as error in batch statistics', () => {
+      // When a topic is created but DB update fails, it should be counted as an error
+      const batchResults: SyncResult[] = [
+        { questionId: 'T1A01', status: 'created', topicId: 100, topicUrl: 'https://forum.openhamprep.com/t/t1a01/100' },
+        { questionId: 'T1A02', status: 'partial', topicId: 101, topicUrl: 'https://forum.openhamprep.com/t/t1a02/101', reason: 'DB update failed' },
+        { questionId: 'T1A03', status: 'error', reason: 'API error' },
+      ];
+
+      const created = batchResults.filter(r => r.status === 'created').length;
+      const errors = batchResults.filter(r => r.status === 'error' || r.status === 'partial').length;
+
+      expect(created).toBe(1);
+      expect(errors).toBe(2); // Both 'error' and 'partial' count as errors
+    });
+
+    it('distinguishes between full success and partial success', () => {
+      const fullSuccess: SyncResult = {
+        questionId: 'T1A01',
+        status: 'created',
+        topicId: 100,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a01/100',
+      };
+
+      const partialSuccess: SyncResult = {
+        questionId: 'T1A02',
+        status: 'partial',
+        topicId: 101,
+        topicUrl: 'https://forum.openhamprep.com/t/t1a02/101',
+        reason: 'Topic created in Discourse but failed to save forum_url to database',
+      };
+
+      // Full success has no reason
+      expect(fullSuccess.reason).toBeUndefined();
+
+      // Partial success has reason explaining the issue
+      expect(partialSuccess.reason).toBeDefined();
+
+      // Both have topicId and topicUrl (topic was created)
+      expect(fullSuccess.topicId).toBeDefined();
+      expect(fullSuccess.topicUrl).toBeDefined();
+      expect(partialSuccess.topicId).toBeDefined();
+      expect(partialSuccess.topicUrl).toBeDefined();
     });
   });
 

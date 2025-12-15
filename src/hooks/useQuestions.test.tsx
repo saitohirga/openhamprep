@@ -17,16 +17,16 @@ vi.mock('@/integrations/supabase/client', () => ({
 // Mock question data for all test types
 const mockDbQuestions = [
   // Technician questions (T prefix)
-  { id: 'T1A01', question: 'Tech Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null },
-  { id: 'T1A02', question: 'Tech Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 1, subelement: 'T1', question_group: 'T1A', links: [], explanation: null },
-  { id: 'T2A01', question: 'Tech Q3?', options: ['A', 'B', 'C', 'D'], correct_answer: 2, subelement: 'T2', question_group: 'T2A', links: [], explanation: null },
+  { id: 'T1A01', question: 'Tech Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null, forum_url: 'https://forum.openhamprep.com/t/t1a01-tech-q1/123' },
+  { id: 'T1A02', question: 'Tech Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 1, subelement: 'T1', question_group: 'T1A', links: [], explanation: null, forum_url: null },
+  { id: 'T2A01', question: 'Tech Q3?', options: ['A', 'B', 'C', 'D'], correct_answer: 2, subelement: 'T2', question_group: 'T2A', links: [], explanation: null, forum_url: 'https://forum.openhamprep.com/t/t2a01-tech-q3/125' },
   // General questions (G prefix)
-  { id: 'G1A01', question: 'General Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'G1', question_group: 'G1A', links: [], explanation: null },
-  { id: 'G1A02', question: 'General Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 1, subelement: 'G1', question_group: 'G1A', links: [], explanation: null },
-  { id: 'G2A01', question: 'General Q3?', options: ['A', 'B', 'C', 'D'], correct_answer: 3, subelement: 'G2', question_group: 'G2A', links: [], explanation: null },
+  { id: 'G1A01', question: 'General Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'G1', question_group: 'G1A', links: [], explanation: null, forum_url: null },
+  { id: 'G1A02', question: 'General Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 1, subelement: 'G1', question_group: 'G1A', links: [], explanation: null, forum_url: 'https://forum.openhamprep.com/t/g1a02-general-q2/200' },
+  { id: 'G2A01', question: 'General Q3?', options: ['A', 'B', 'C', 'D'], correct_answer: 3, subelement: 'G2', question_group: 'G2A', links: [], explanation: null, forum_url: null },
   // Extra questions (E prefix)
-  { id: 'E1A01', question: 'Extra Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'E1', question_group: 'E1A', links: [], explanation: null },
-  { id: 'E1A02', question: 'Extra Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 2, subelement: 'E1', question_group: 'E1A', links: [], explanation: null },
+  { id: 'E1A01', question: 'Extra Q1?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'E1', question_group: 'E1A', links: [], explanation: null, forum_url: 'https://forum.openhamprep.com/t/e1a01-extra-q1/300' },
+  { id: 'E1A02', question: 'Extra Q2?', options: ['A', 'B', 'C', 'D'], correct_answer: 2, subelement: 'E1', question_group: 'E1A', links: [], explanation: null, forum_url: null },
 ];
 
 function createWrapper() {
@@ -79,6 +79,7 @@ describe('useQuestions', () => {
         group: 'T1A',
         links: [],
         explanation: null,
+        forumUrl: 'https://forum.openhamprep.com/t/t1a01-tech-q1/123',
       });
     });
   });
@@ -213,7 +214,7 @@ describe('useQuestions', () => {
       // Only return Technician questions from the database
       mockSelect.mockResolvedValueOnce({
         data: [
-          { id: 'T1A01', question: 'Tech Q?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null },
+          { id: 'T1A01', question: 'Tech Q?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null, forum_url: null },
         ],
         error: null,
       });
@@ -226,6 +227,76 @@ describe('useQuestions', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toHaveLength(0);
+    });
+  });
+
+  describe('forum_url handling', () => {
+    it('transforms forum_url to forumUrl in camelCase', async () => {
+      mockSelect.mockResolvedValueOnce({
+        data: [
+          { id: 'T1A01', question: 'Q?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null, forum_url: 'https://forum.openhamprep.com/t/test/123' },
+        ],
+        error: null,
+      });
+
+      const { result } = renderHook(() => useQuestions('technician'), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.[0]?.forumUrl).toBe('https://forum.openhamprep.com/t/test/123');
+    });
+
+    it('handles null forum_url', async () => {
+      mockSelect.mockResolvedValueOnce({
+        data: [
+          { id: 'T1A01', question: 'Q?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: null, forum_url: null },
+        ],
+        error: null,
+      });
+
+      const { result } = renderHook(() => useQuestions('technician'), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.[0]?.forumUrl).toBeNull();
+    });
+
+    it('preserves forum_url across different license types', async () => {
+      const { result } = renderHook(() => useQuestions(), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      // T1A01 has forum_url, T1A02 does not
+      const t1a01 = result.current.data?.find(q => q.id === 'T1A01');
+      const t1a02 = result.current.data?.find(q => q.id === 'T1A02');
+      const g1a02 = result.current.data?.find(q => q.id === 'G1A02');
+      const e1a01 = result.current.data?.find(q => q.id === 'E1A01');
+
+      expect(t1a01?.forumUrl).toBe('https://forum.openhamprep.com/t/t1a01-tech-q1/123');
+      expect(t1a02?.forumUrl).toBeNull();
+      expect(g1a02?.forumUrl).toBe('https://forum.openhamprep.com/t/g1a02-general-q2/200');
+      expect(e1a01?.forumUrl).toBe('https://forum.openhamprep.com/t/e1a01-extra-q1/300');
+    });
+
+    it('includes forumUrl in Question interface', async () => {
+      mockSelect.mockResolvedValueOnce({
+        data: [
+          { id: 'T1A01', question: 'Q?', options: ['A', 'B', 'C', 'D'], correct_answer: 0, subelement: 'T1', question_group: 'T1A', links: [], explanation: 'Test explanation', forum_url: 'https://forum.openhamprep.com/t/test/456' },
+        ],
+        error: null,
+      });
+
+      const { result } = renderHook(() => useQuestions('technician'), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      const question = result.current.data?.[0];
+      // Verify all expected properties exist
+      expect(question).toHaveProperty('id');
+      expect(question).toHaveProperty('question');
+      expect(question).toHaveProperty('options');
+      expect(question).toHaveProperty('correctAnswer');
+      expect(question).toHaveProperty('subelement');
+      expect(question).toHaveProperty('group');
+      expect(question).toHaveProperty('links');
+      expect(question).toHaveProperty('explanation');
+      expect(question).toHaveProperty('forumUrl');
     });
   });
 });

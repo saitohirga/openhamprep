@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useExplanationFeedback } from "@/hooks/useExplanationFeedback";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Bookmark, BookmarkCheck, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageSquare, ThumbsUp, ThumbsDown, ExternalLink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -344,6 +344,30 @@ export function QuestionCard({
                 </div>
               )}
             </div>
+
+            {/* Discuss in Forum Button */}
+            {question.forumUrl && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto gap-2"
+                  asChild
+                >
+                  <a
+                    href={question.forumUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Users className="w-4 h-4" aria-hidden="true" />
+                    Discuss with Other Hams
+                    <ExternalLink className="w-3 h-3 ml-1" aria-hidden="true" />
+                  </a>
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Join the community discussion, share study tips, or suggest improvements to this explanation.
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </div>
