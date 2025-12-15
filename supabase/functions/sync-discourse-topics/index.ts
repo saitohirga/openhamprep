@@ -40,6 +40,7 @@ interface SyncResult {
   questionId: string;
   status: 'created' | 'skipped' | 'error';
   topicId?: number;
+  topicUrl?: string;
   reason?: string;
 }
 
@@ -169,7 +170,7 @@ async function createDiscourseTopic(
   username: string,
   categoryId: number,
   question: Question
-): Promise<{ success: boolean; topicId?: number; error?: string }> {
+): Promise<{ success: boolean; topicId?: number; topicUrl?: string; error?: string }> {
   // Truncate title if needed (Discourse has a 255 char limit)
   let title = `${question.id} - ${question.question}`;
   if (title.length > MAX_TITLE_LENGTH) {
@@ -199,7 +200,10 @@ async function createDiscourseTopic(
     }
 
     const data = await response.json();
-    return { success: true, topicId: data.topic_id };
+    // Construct the topic URL from the response
+    // Discourse returns topic_id and topic_slug in the response
+    const topicUrl = `${DISCOURSE_URL}/t/${data.topic_slug}/${data.topic_id}`;
+    return { success: true, topicId: data.topic_id, topicUrl };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -451,7 +455,21 @@ serve(async (req) => {
       const result = await createDiscourseTopic(apiKey, username, categoryId, question as Question);
 
       if (result.success) {
-        results.push({ questionId: question.id, status: 'created', topicId: result.topicId });
+        // Save the forum URL to the database
+        if (result.topicUrl) {
+          const { error: updateError } = await supabase
+            .from('questions')
+            .update({ forum_url: result.topicUrl })
+            .eq('id', question.id);
+
+          if (updateError) {
+            console.error(`Failed to save forum_url for ${question.id}: ${updateError.message}`);
+          } else {
+            console.log(`Saved forum_url for ${question.id}: ${result.topicUrl}`);
+          }
+        }
+
+        results.push({ questionId: question.id, status: 'created', topicId: result.topicId, topicUrl: result.topicUrl });
         created++;
       } else {
         results.push({ questionId: question.id, status: 'error', reason: result.error });

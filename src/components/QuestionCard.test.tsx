@@ -174,4 +174,118 @@ describe('QuestionCard', () => {
       });
     });
   });
+
+  describe('Forum Discussion Button', () => {
+    const questionWithForumUrl: Question = {
+      ...mockQuestion,
+      forumUrl: 'https://forum.openhamprep.com/t/t1a01-question/123',
+    };
+
+    const questionWithoutForumUrl: Question = {
+      ...mockQuestion,
+      forumUrl: null,
+    };
+
+    it('shows "Discuss with Other Hams" button when forumUrl is present and showResult is true', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      expect(screen.getByText('Discuss with Other Hams')).toBeInTheDocument();
+    });
+
+    it('does not show forum button when forumUrl is null', () => {
+      renderQuestionCard({
+        question: questionWithoutForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      expect(screen.queryByText('Discuss with Other Hams')).not.toBeInTheDocument();
+    });
+
+    it('does not show forum button when showResult is false', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: false
+      });
+
+      expect(screen.queryByText('Discuss with Other Hams')).not.toBeInTheDocument();
+    });
+
+    it('does not show forum button when hideLinks is true', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: true
+      });
+
+      expect(screen.queryByText('Discuss with Other Hams')).not.toBeInTheDocument();
+    });
+
+    it('forum button links to the correct URL', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      const link = screen.getByRole('link', { name: /Discuss with Other Hams/i });
+      expect(link).toHaveAttribute('href', 'https://forum.openhamprep.com/t/t1a01-question/123');
+    });
+
+    it('forum button opens in new tab', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      const link = screen.getByRole('link', { name: /Discuss with Other Hams/i });
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it('shows helper text below the forum button', () => {
+      renderQuestionCard({
+        question: questionWithForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      expect(screen.getByText(/Join the community discussion/)).toBeInTheDocument();
+    });
+
+    it('does not show forum button when forumUrl is undefined', () => {
+      const questionWithUndefinedForumUrl: Question = {
+        id: 'T1A01',
+        question: 'Test question?',
+        options: { A: 'A', B: 'B', C: 'C', D: 'D' },
+        correctAnswer: 'A',
+        subelement: 'T1',
+        group: 'T1A',
+        explanation: 'Test explanation',
+        links: [],
+        // forumUrl is omitted (undefined)
+      };
+
+      renderQuestionCard({
+        question: questionWithUndefinedForumUrl,
+        selectedAnswer: 'A',
+        showResult: true,
+        hideLinks: false
+      });
+
+      expect(screen.queryByText('Discuss with Other Hams')).not.toBeInTheDocument();
+    });
+  });
 });

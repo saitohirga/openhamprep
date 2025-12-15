@@ -412,6 +412,7 @@ export type Database = {
           created_at: string
           edit_history: Json
           explanation: string | null
+          forum_url: string | null
           id: string
           links: Json
           options: Json
@@ -424,6 +425,7 @@ export type Database = {
           created_at?: string
           edit_history?: Json
           explanation?: string | null
+          forum_url?: string | null
           id: string
           links?: Json
           options: Json
@@ -436,6 +438,7 @@ export type Database = {
           created_at?: string
           edit_history?: Json
           explanation?: string | null
+          forum_url?: string | null
           id?: string
           links?: Json
           options?: Json
