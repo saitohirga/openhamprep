@@ -1389,8 +1389,8 @@ describe('Batch response structure', () => {
             bodyPreview: '## Question\nWhat is the purpose...',
           },
         ],
-        allQuestionsToCreate: ['T1A01', 'T1A02', 'G1A01'],
-        allQuestionsToSkip: ['T1B01'],
+        questionsToCreate: ['T1A01', 'T1A02', 'G1A01'],
+        questionsToSkip: ['T1B01'],
       };
 
       expect(mockResponse.dryRun).toBe(true);
@@ -1398,7 +1398,7 @@ describe('Batch response structure', () => {
       expect(mockResponse.summary.estimatedTime).toContain('minutes');
       expect(mockResponse.byCategory['Technician Questions'].toCreate).toBe(400);
       expect(mockResponse.exampleTopics).toHaveLength(1);
-      expect(mockResponse.allQuestionsToCreate).toContain('T1A01');
+      expect(mockResponse.questionsToCreate).toContain('T1A01');
     });
 
     it('validates example topic structure', () => {

@@ -6,8 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Configuration constants
 const DISCOURSE_URL = 'https://forum.openhamprep.com';
-const DISCOURSE_USERNAME = 'sonyccd';
+const DEFAULT_BATCH_SIZE = 50;
+const MAX_BATCH_SIZE = 100;
+const RATE_LIMIT_DELAY_MS = 1000;
+const PAGINATION_DELAY_MS = 200;
+const MAX_PAGINATION_PAGES = 50;
+const MAX_TITLE_LENGTH = 250;
+const MAX_QUESTION_IDS_IN_RESPONSE = 100;
 
 const CATEGORY_MAP: Record<string, string> = {
   'T': 'Technician Questions',
@@ -36,20 +43,25 @@ interface SyncResult {
   reason?: string;
 }
 
-async function getDiscourseApiKey(): Promise<string> {
-  // Check both env var formats - underscore version for local dev, space version for production secrets
-  const apiKey = Deno.env.get('DISCOURSE_API_KEY') || Deno.env.get('Discourse API Key');
+function getDiscourseConfig(): { apiKey: string; username: string } {
+  const apiKey = Deno.env.get('DISCOURSE_API_KEY');
   if (!apiKey) {
-    throw new Error('Discourse API Key not found in secrets. Set DISCOURSE_API_KEY environment variable.');
+    throw new Error('DISCOURSE_API_KEY environment variable is required');
   }
-  return apiKey;
+
+  const username = Deno.env.get('DISCOURSE_USERNAME');
+  if (!username) {
+    throw new Error('DISCOURSE_USERNAME environment variable is required');
+  }
+
+  return { apiKey, username };
 }
 
-async function fetchDiscourseCategories(apiKey: string): Promise<Map<string, number>> {
+async function fetchDiscourseCategories(apiKey: string, username: string): Promise<Map<string, number>> {
   const response = await fetch(`${DISCOURSE_URL}/categories.json`, {
     headers: {
       'Api-Key': apiKey,
-      'Api-Username': DISCOURSE_USERNAME,
+      'Api-Username': username,
     },
   });
 
@@ -69,6 +81,7 @@ async function fetchDiscourseCategories(apiKey: string): Promise<Map<string, num
 
 async function fetchExistingTopicsInCategory(
   apiKey: string,
+  username: string,
   categoryId: number,
   categorySlug: string
 ): Promise<Set<string>> {
@@ -82,7 +95,7 @@ async function fetchExistingTopicsInCategory(
       {
         headers: {
           'Api-Key': apiKey,
-          'Api-Username': DISCOURSE_USERNAME,
+          'Api-Username': username,
         },
       }
     );
@@ -110,13 +123,13 @@ async function fetchExistingTopicsInCategory(
 
     page++;
     // Safety limit to prevent infinite loops
-    if (page > 50) {
+    if (page > MAX_PAGINATION_PAGES) {
       console.warn('Reached page limit when fetching existing topics');
       break;
     }
 
     // Small delay to respect rate limits
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, PAGINATION_DELAY_MS));
   }
 
   return existingQuestionIds;
@@ -153,14 +166,14 @@ _This topic was automatically created to facilitate community discussion about t
 
 async function createDiscourseTopic(
   apiKey: string,
+  username: string,
   categoryId: number,
   question: Question
 ): Promise<{ success: boolean; topicId?: number; error?: string }> {
   // Truncate title if needed (Discourse has a 255 char limit)
-  const maxTitleLength = 250;
   let title = `${question.id} - ${question.question}`;
-  if (title.length > maxTitleLength) {
-    title = title.substring(0, maxTitleLength - 3) + '...';
+  if (title.length > MAX_TITLE_LENGTH) {
+    title = title.substring(0, MAX_TITLE_LENGTH - 3) + '...';
   }
 
   const body = formatTopicBody(question);
@@ -170,7 +183,7 @@ async function createDiscourseTopic(
       method: 'POST',
       headers: {
         'Api-Key': apiKey,
-        'Api-Username': DISCOURSE_USERNAME,
+        'Api-Username': username,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -202,22 +215,58 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = await getDiscourseApiKey();
+    // Get Discourse configuration from environment
+    const { apiKey, username } = getDiscourseConfig();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action = 'sync', license, batchSize = 50 } = await req.json().catch(() => ({}));
+    // Get auth header and verify user is admin
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (!authError && user) {
+        // Check if user has admin role
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (roleData?.role !== 'admin') {
+          return new Response(
+            JSON.stringify({ error: 'Forbidden: Admin access required' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // Parse and validate request body
+    const body = await req.json().catch(() => ({}));
+    const action = typeof body.action === 'string' ? body.action : 'sync';
+    const license = typeof body.license === 'string' ? body.license : undefined;
+    const rawBatchSize = typeof body.batchSize === 'number' ? body.batchSize : DEFAULT_BATCH_SIZE;
+
+    // Validate action
+    if (action !== 'sync' && action !== 'dry-run') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid action. Use "sync" or "dry-run"' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validate batch size (max 100 to stay well within timeout limits)
-    const effectiveBatchSize = Math.min(Math.max(1, batchSize), 100);
+    const effectiveBatchSize = Math.min(Math.max(1, rawBatchSize), MAX_BATCH_SIZE);
 
     console.log(`Starting Discourse sync with action: ${action}, license: ${license || 'all'}, batchSize: ${effectiveBatchSize}`);
 
     // Fetch category IDs from Discourse
     console.log('Fetching Discourse categories...');
-    const categoryIds = await fetchDiscourseCategories(apiKey);
+    const categoryIds = await fetchDiscourseCategories(apiKey, username);
 
     // Validate required categories exist
     const missingCategories: string[] = [];
@@ -265,7 +314,7 @@ serve(async (req) => {
       const categoryId = categoryIds.get(categoryName)!;
       const categorySlug = getCategorySlug(categoryName);
 
-      const topicsInCategory = await fetchExistingTopicsInCategory(apiKey, categoryId, categorySlug);
+      const topicsInCategory = await fetchExistingTopicsInCategory(apiKey, username, categoryId, categorySlug);
       for (const id of topicsInCategory) {
         existingTopics.add(id);
       }
@@ -320,10 +369,9 @@ serve(async (req) => {
         const prefix = question.id[0];
         const countForPrefix = exampleTopics.filter(e => e.questionId[0] === prefix).length;
         if (countForPrefix < 3) {
-          const maxTitleLength = 250;
           let title = `${question.id} - ${question.question}`;
-          if (title.length > maxTitleLength) {
-            title = title.substring(0, maxTitleLength - 3) + '...';
+          if (title.length > MAX_TITLE_LENGTH) {
+            title = title.substring(0, MAX_TITLE_LENGTH - 3) + '...';
           }
           const body = formatTopicBody(question);
           exampleTopics.push({
@@ -348,6 +396,10 @@ serve(async (req) => {
       const estimatedTimeSeconds = questionsToCreate.length;
       const estimatedTimeMinutes = Math.ceil(estimatedTimeSeconds / 60);
 
+      // Limit question IDs in response to prevent large payloads
+      const questionsToCreateIds = questionsToCreate.map((q: Question) => q.id);
+      const questionsToSkipIds = skippedQuestions.map((q: Question) => q.id);
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -360,8 +412,11 @@ serve(async (req) => {
           },
           byCategory: countByLicense,
           exampleTopics,
-          allQuestionsToCreate: questionsToCreate.map((q: Question) => q.id),
-          allQuestionsToSkip: skippedQuestions.map((q: Question) => q.id),
+          questionsToCreate: questionsToCreateIds.slice(0, MAX_QUESTION_IDS_IN_RESPONSE),
+          questionsToSkip: questionsToSkipIds.slice(0, MAX_QUESTION_IDS_IN_RESPONSE),
+          ...(questionsToCreateIds.length > MAX_QUESTION_IDS_IN_RESPONSE && {
+            note: `Showing first ${MAX_QUESTION_IDS_IN_RESPONSE} of ${questionsToCreateIds.length} question IDs`,
+          }),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -383,7 +438,7 @@ serve(async (req) => {
       const categoryId = categoryIds.get(categoryName)!;
 
       console.log(`Creating topic for ${question.id}...`);
-      const result = await createDiscourseTopic(apiKey, categoryId, question as Question);
+      const result = await createDiscourseTopic(apiKey, username, categoryId, question as Question);
 
       if (result.success) {
         results.push({ questionId: question.id, status: 'created', topicId: result.topicId });
@@ -394,8 +449,8 @@ serve(async (req) => {
         console.error(`Failed to create topic for ${question.id}: ${result.error}`);
       }
 
-      // Rate limiting: wait 1 second between requests
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Rate limiting: wait between requests
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
     }
 
     const isComplete = remaining === 0;
