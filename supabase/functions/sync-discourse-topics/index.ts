@@ -1,6 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Always compares all characters regardless of where a mismatch occurs.
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Still do a comparison to maintain constant time for same-length strings
+    // but we know the result will be false
+    const dummy = a.length > 0 ? a : 'x';
+    let result = 0;
+    for (let i = 0; i < dummy.length; i++) {
+      result |= dummy.charCodeAt(i) ^ dummy.charCodeAt(i);
+    }
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -237,8 +260,13 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    // Check if this is a service role key (matches the environment variable)
-    const isServiceRole = token === supabaseKey;
+    // Check if this is a service role key using constant-time comparison to prevent timing attacks
+    // WARNING: Service role key bypasses Row Level Security - only use for trusted automation
+    const isServiceRole = constantTimeCompare(token, supabaseKey);
+
+    if (isServiceRole) {
+      console.log('Service role authentication used for sync operation');
+    }
 
     if (!isServiceRole) {
       // Try to authenticate as a user
