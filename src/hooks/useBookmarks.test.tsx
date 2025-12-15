@@ -21,6 +21,19 @@ vi.mock('sonner', () => ({
   },
 }));
 
+// Mock usePostHog
+vi.mock('@/hooks/usePostHog', () => ({
+  usePostHog: vi.fn(() => ({
+    capture: vi.fn(),
+    isReady: true,
+  })),
+  ANALYTICS_EVENTS: {
+    QUESTION_BOOKMARKED: 'question_bookmarked',
+    BOOKMARK_REMOVED: 'bookmark_removed',
+    BOOKMARKED_QUESTION_REVIEWED: 'bookmarked_question_reviewed',
+  },
+}));
+
 // Mock Supabase
 const mockSelect = vi.fn();
 const mockInsert = vi.fn();
@@ -173,6 +186,42 @@ describe('useBookmarks', () => {
       expect(result.current.addBookmark).toBeDefined();
       expect(typeof result.current.addBookmark.mutateAsync).toBe('function');
     });
+
+    it('calls insert with correct parameters', async () => {
+      const { result } = renderHook(() => useBookmarks(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.addBookmark.mutateAsync({ questionId: 'T1A03', note: 'New note' });
+      });
+
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        user_id: 'test-user-id',
+        question_id: 'T1A03',
+        note: 'New note',
+      }));
+    });
+
+    it('calls insert with null note when not provided', async () => {
+      const { result } = renderHook(() => useBookmarks(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.addBookmark.mutateAsync({ questionId: 'T1A03' });
+      });
+
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        user_id: 'test-user-id',
+        question_id: 'T1A03',
+        note: null,
+      }));
+    });
   });
 
   describe('removeBookmark mutation', () => {
@@ -186,6 +235,20 @@ describe('useBookmarks', () => {
       expect(result.current.removeBookmark).toBeDefined();
       expect(typeof result.current.removeBookmark.mutateAsync).toBe('function');
     });
+
+    it('calls delete on remove', async () => {
+      const { result } = renderHook(() => useBookmarks(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.removeBookmark.mutateAsync('T1A01');
+      });
+
+      expect(mockDelete).toHaveBeenCalled();
+    });
   });
 
   describe('updateNote mutation', () => {
@@ -198,6 +261,37 @@ describe('useBookmarks', () => {
 
       expect(result.current.updateNote).toBeDefined();
       expect(typeof result.current.updateNote.mutateAsync).toBe('function');
+    });
+
+    it('calls update with correct note', async () => {
+      const { result } = renderHook(() => useBookmarks(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.updateNote.mutateAsync({ questionId: 'T1A01', note: 'Updated note' });
+      });
+
+      expect(mockUpdate).toHaveBeenCalledWith({ note: 'Updated note' });
+    });
+  });
+
+  describe('when user is not authenticated', () => {
+    it('returns empty bookmarks', async () => {
+      const { useAuth } = await import('./useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        user: null,
+        loading: false,
+      } as any);
+
+      const { result } = renderHook(() => useBookmarks(), {
+        wrapper: createWrapper(),
+      });
+
+      // Query should be disabled, so bookmarks should be undefined
+      expect(result.current.bookmarks).toBeUndefined();
     });
   });
 });
