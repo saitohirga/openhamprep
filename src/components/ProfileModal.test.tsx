@@ -70,6 +70,94 @@ describe('ProfileModal', () => {
     mockSignOut.mockResolvedValue({ error: null });
   });
 
+  describe('Rendering', () => {
+    it('renders the profile modal when open', () => {
+      renderProfileModal();
+
+      expect(screen.getByText('Profile Settings')).toBeInTheDocument();
+      expect(screen.getByText('Display Name')).toBeInTheDocument();
+      expect(screen.getByText('Email Address')).toBeInTheDocument();
+      expect(screen.getByText('Password')).toBeInTheDocument();
+      expect(screen.getByText('Theme')).toBeInTheDocument();
+      expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+    });
+
+    it('displays user info', () => {
+      renderProfileModal();
+
+      expect(screen.getByText('Test User')).toBeInTheDocument();
+      expect(screen.getByText(/Current: test@example.com/)).toBeInTheDocument();
+    });
+
+    it('shows "Not set" when display name is null', () => {
+      renderProfileModal({
+        userInfo: { displayName: null, email: 'test@example.com' },
+      });
+
+      expect(screen.getByText('Not set')).toBeInTheDocument();
+    });
+  });
+
+  describe('Display Name Update', () => {
+    it('allows editing display name', async () => {
+      const user = userEvent.setup();
+      renderProfileModal();
+
+      const editButton = screen.getByRole('button', { name: /edit/i });
+      await user.click(editButton);
+
+      const input = screen.getByPlaceholderText('Enter your display name');
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveValue('Test User');
+    });
+
+    it('allows cancelling edit', async () => {
+      const user = userEvent.setup();
+      renderProfileModal();
+
+      await user.click(screen.getByRole('button', { name: /edit/i }));
+      await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+      expect(screen.queryByPlaceholderText('Enter your display name')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Email Update', () => {
+    it('has email input field', () => {
+      renderProfileModal();
+
+      const emailInput = screen.getByPlaceholderText('Enter new email address');
+      expect(emailInput).toBeInTheDocument();
+    });
+
+    it('change button is disabled when email is empty', () => {
+      renderProfileModal();
+
+      const changeButton = screen.getByRole('button', { name: /change/i });
+      expect(changeButton).toBeDisabled();
+    });
+
+    it('enables change button when email is entered', async () => {
+      const user = userEvent.setup();
+      renderProfileModal();
+
+      const emailInput = screen.getByPlaceholderText('Enter new email address');
+      await user.type(emailInput, 'new@example.com');
+
+      const changeButton = screen.getByRole('button', { name: /change/i });
+      expect(changeButton).not.toBeDisabled();
+    });
+  });
+
+  describe('Password Reset', () => {
+    it('has password reset button', () => {
+      renderProfileModal();
+
+      const resetButton = screen.getByRole('button', { name: /send password reset email/i });
+      expect(resetButton).toBeInTheDocument();
+    });
+  });
+
   describe('Account Deletion', () => {
     it('shows delete confirmation when Delete Account is clicked', async () => {
       const user = userEvent.setup();

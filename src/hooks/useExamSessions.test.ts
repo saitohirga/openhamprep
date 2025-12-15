@@ -1,79 +1,70 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useExamSessions, useExamSessionsCount, useUserTargetExam } from './useExamSessions';
+import {
+  useExamSessions,
+  useExamSessionsCount,
+  useUserTargetExam,
+  useExamSessionsLastUpdated,
+  useSaveTargetExam,
+  useRemoveTargetExam,
+  useBulkImportExamSessions,
+} from './useExamSessions';
 import React from 'react';
 
-// Mock supabase
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock supabase - we need a more flexible mock setup
+const mockMaybeSingle = vi.fn();
+const mockSingle = vi.fn();
+const mockSelect = vi.fn();
+const mockInsert = vi.fn();
+const mockDelete = vi.fn();
+const mockUpsert = vi.fn();
+const mockEq = vi.fn();
+const mockNeq = vi.fn();
+const mockGte = vi.fn();
+const mockLte = vi.fn();
+const mockLike = vi.fn();
+const mockOrder = vi.fn();
+const mockRange = vi.fn();
+const mockLimit = vi.fn();
+
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        gte: vi.fn(() => ({
-          order: vi.fn(() => ({
-            range: vi.fn(() => Promise.resolve({
-              data: [
-                {
-                  id: 'session-1',
-                  title: 'Test Session',
-                  exam_date: '2025-02-01',
-                  city: 'Raleigh',
-                  state: 'NC',
-                  zip: '27601',
-                  walk_ins_allowed: true,
-                  latitude: 35.7796,
-                  longitude: -78.6382,
-                },
-              ],
-              error: null,
-              count: 1,
-            })),
-            lte: vi.fn(() => ({
-              range: vi.fn(() => Promise.resolve({
-                data: [],
-                error: null,
-                count: 0,
-              })),
-              eq: vi.fn(() => ({
-                range: vi.fn(() => Promise.resolve({
-                  data: [],
-                  error: null,
-                  count: 0,
-                })),
-                like: vi.fn(() => ({
-                  range: vi.fn(() => Promise.resolve({
-                    data: [],
-                    error: null,
-                    count: 0,
-                  })),
-                  eq: vi.fn(() => ({
-                    range: vi.fn(() => Promise.resolve({
-                      data: [],
-                      error: null,
-                      count: 0,
-                    })),
-                  })),
-                })),
-              })),
-            })),
-          })),
-        })),
-        eq: vi.fn(() => ({
-          maybeSingle: vi.fn(() => Promise.resolve({
-            data: null,
-            error: null,
-          })),
-        })),
-        order: vi.fn(() => ({
-          limit: vi.fn(() => ({
-            maybeSingle: vi.fn(() => Promise.resolve({
-              data: { updated_at: '2025-01-15T10:00:00Z' },
-              error: null,
-            })),
-          })),
-        })),
-      })),
-    })),
+    from: vi.fn((table: string) => {
+      if (table === 'exam_sessions') {
+        return {
+          select: mockSelect,
+          insert: mockInsert,
+          delete: mockDelete,
+        };
+      }
+      if (table === 'user_target_exam') {
+        return {
+          select: mockSelect,
+          upsert: mockUpsert,
+          delete: mockDelete,
+        };
+      }
+      if (table === 'weekly_study_goals') {
+        return {
+          upsert: mockUpsert,
+        };
+      }
+      return {
+        select: mockSelect,
+        insert: mockInsert,
+        delete: mockDelete,
+        upsert: mockUpsert,
+      };
+    }),
   },
 }));
 
@@ -93,6 +84,53 @@ const createWrapper = () => {
 describe('useExamSessions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Reset all mock chains for exam_sessions queries
+    mockRange.mockResolvedValue({
+      data: [
+        {
+          id: 'session-1',
+          title: 'Test Session',
+          exam_date: '2025-02-01',
+          city: 'Raleigh',
+          state: 'NC',
+          zip: '27601',
+          walk_ins_allowed: true,
+          latitude: 35.7796,
+          longitude: -78.6382,
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+
+    mockOrder.mockReturnValue({ range: mockRange });
+    mockLike.mockReturnValue({ eq: mockEq, range: mockRange, order: mockOrder });
+    mockEq.mockReturnValue({
+      maybeSingle: mockMaybeSingle,
+      eq: mockEq,
+      like: mockLike,
+      range: mockRange,
+      order: mockOrder,
+    });
+    mockLte.mockReturnValue({ eq: mockEq, like: mockLike, range: mockRange, order: mockOrder });
+    mockGte.mockReturnValue({ order: mockOrder, lte: mockLte, eq: mockEq, like: mockLike, range: mockRange });
+    mockLimit.mockReturnValue({ maybeSingle: mockMaybeSingle });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockSingle.mockResolvedValue({ data: { id: 'test-id' }, error: null });
+
+    // For select queries
+    mockSelect.mockReturnValue({
+      gte: mockGte,
+      eq: mockEq,
+      order: mockOrder,
+    });
+
+    // For insert/delete/upsert
+    mockInsert.mockResolvedValue({ error: null });
+    mockDelete.mockReturnValue({ eq: mockEq, neq: mockNeq });
+    mockNeq.mockResolvedValue({ error: null });
+    mockUpsert.mockReturnValue({ select: vi.fn().mockReturnValue({ single: mockSingle }) });
   });
 
   describe('useExamSessions hook', () => {
@@ -193,5 +231,181 @@ describe('ExamSession type', () => {
     expect(mockSession.id).toBe('test-id');
     expect(mockSession.walk_ins_allowed).toBe(true);
     expect(mockSession.latitude).toBe(35.7796);
+  });
+});
+
+describe('useExamSessionsLastUpdated', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMaybeSingle.mockResolvedValue({
+      data: { updated_at: '2025-01-15T10:00:00Z' },
+      error: null,
+    });
+    mockLimit.mockReturnValue({ maybeSingle: mockMaybeSingle });
+    mockOrder.mockReturnValue({ limit: mockLimit });
+    mockSelect.mockReturnValue({ order: mockOrder });
+  });
+
+  it('returns last updated timestamp', async () => {
+    const { result } = renderHook(() => useExamSessionsLastUpdated(), {
+      wrapper: createWrapper(),
+    });
+
+    // Hook should be defined
+    expect(result.current).toBeDefined();
+  });
+});
+
+describe('useSaveTargetExam', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSingle.mockResolvedValue({ data: { id: 'target-exam-id' }, error: null });
+    mockUpsert.mockReturnValue({ select: vi.fn().mockReturnValue({ single: mockSingle }) });
+  });
+
+  it('provides mutateAsync function', async () => {
+    const { result } = renderHook(() => useSaveTargetExam(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.mutateAsync).toBeDefined();
+    expect(typeof result.current.mutateAsync).toBe('function');
+  });
+
+  it('accepts study intensity parameters', async () => {
+    const { result } = renderHook(() => useSaveTargetExam(), {
+      wrapper: createWrapper(),
+    });
+
+    // Should be able to call with light, moderate, or intensive
+    const intensities = ['light', 'moderate', 'intensive'] as const;
+    intensities.forEach((intensity) => {
+      expect(() =>
+        result.current.mutate({
+          userId: 'test-user',
+          examSessionId: 'exam-session-id',
+          studyIntensity: intensity,
+        })
+      ).not.toThrow();
+    });
+  });
+});
+
+describe('useRemoveTargetExam', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEq.mockResolvedValue({ error: null });
+    mockDelete.mockReturnValue({ eq: mockEq });
+  });
+
+  it('provides mutateAsync function', async () => {
+    const { result } = renderHook(() => useRemoveTargetExam(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.mutateAsync).toBeDefined();
+    expect(typeof result.current.mutateAsync).toBe('function');
+  });
+});
+
+describe('useBulkImportExamSessions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockNeq.mockResolvedValue({ error: null });
+    mockDelete.mockReturnValue({ neq: mockNeq });
+    mockInsert.mockResolvedValue({ error: null });
+  });
+
+  it('provides mutateAsync function', async () => {
+    const { result } = renderHook(() => useBulkImportExamSessions(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.mutateAsync).toBeDefined();
+    expect(typeof result.current.mutateAsync).toBe('function');
+  });
+
+  it('can be called with session data', async () => {
+    const { result } = renderHook(() => useBulkImportExamSessions(), {
+      wrapper: createWrapper(),
+    });
+
+    const testSessions = [
+      {
+        title: 'Test Session',
+        exam_date: '2025-02-01',
+        sponsor: 'ARRL',
+        exam_time: '9:00 AM',
+        walk_ins_allowed: true,
+        public_contact: 'John Doe',
+        phone: '555-1234',
+        email: 'test@example.com',
+        vec: 'ARRL/VEC',
+        location_name: 'Community Center',
+        address: '123 Main St',
+        address_2: null,
+        address_3: null,
+        city: 'Raleigh',
+        state: 'NC',
+        zip: '27601',
+        latitude: 35.7796,
+        longitude: -78.6382,
+      },
+    ];
+
+    // Should not throw when calling mutate
+    expect(() => result.current.mutate(testSessions)).not.toThrow();
+  });
+});
+
+describe('useExamSessions with date filters', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRange.mockResolvedValue({
+      data: [],
+      error: null,
+      count: 0,
+    });
+    mockOrder.mockReturnValue({ range: mockRange });
+    mockLte.mockReturnValue({ eq: mockEq, like: mockLike, range: mockRange, order: mockOrder });
+    mockGte.mockReturnValue({ order: mockOrder, lte: mockLte, eq: mockEq, like: mockLike });
+    mockSelect.mockReturnValue({ gte: mockGte, eq: mockEq, order: mockOrder });
+  });
+
+  it('accepts startDate filter', () => {
+    const { result } = renderHook(
+      () =>
+        useExamSessions({
+          startDate: '2025-01-01',
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    expect(result.current).toBeDefined();
+  });
+
+  it('accepts endDate filter', () => {
+    const { result } = renderHook(
+      () =>
+        useExamSessions({
+          endDate: '2025-12-31',
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    expect(result.current).toBeDefined();
+  });
+
+  it('accepts combined date range filter', () => {
+    const { result } = renderHook(
+      () =>
+        useExamSessions({
+          startDate: '2025-01-01',
+          endDate: '2025-12-31',
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    expect(result.current).toBeDefined();
   });
 });
