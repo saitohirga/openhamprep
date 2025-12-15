@@ -12,8 +12,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "esnext", // Target modern browsers to avoid legacy polyfills
   },
-  // Expose NEXT_PUBLIC_ env vars (auto-set by Supabase Vercel Integration)
-  envPrefix: ["NEXT_PUBLIC_"],
+  // Expose env vars: NEXT_PUBLIC_ (Supabase) and VITE_ (PostHog, Pendo)
+  envPrefix: ["NEXT_PUBLIC_", "VITE_"],
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
