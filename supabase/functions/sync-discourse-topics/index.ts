@@ -2,23 +2,33 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * Constant-time string comparison to prevent timing attacks.
- * Pads strings to equal length and compares all characters regardless of mismatch position.
+ * Decode a JWT and extract the payload without verifying the signature.
+ * The signature is already verified by Supabase's API gateway.
  */
-function constantTimeCompare(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
 
-  // Pad shorter string with null characters for constant-time comparison
-  const aPadded = a.padEnd(maxLen, '\0');
-  const bPadded = b.padEnd(maxLen, '\0');
-
-  let result = 0;
-  for (let i = 0; i < maxLen; i++) {
-    result |= aPadded.charCodeAt(i) ^ bPadded.charCodeAt(i);
+    // Base64url decode the payload (second part)
+    const payload = parts[1];
+    // Replace URL-safe characters and add padding
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const decoded = atob(padded);
+    return JSON.parse(decoded);
+  } catch {
+    return null;
   }
+}
 
-  // Both XOR result must be 0 AND original lengths must match
-  return result === 0 && a.length === b.length;
+/**
+ * Check if a JWT token has the service_role claim.
+ * This is used for automated/scripted access to the edge function.
+ */
+function isServiceRoleToken(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === 'service_role';
 }
 
 const corsHeaders = {
@@ -257,9 +267,10 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    // Check if this is a service role key using constant-time comparison to prevent timing attacks
-    // WARNING: Service role key bypasses Row Level Security - only use for trusted automation
-    const isServiceRole = constantTimeCompare(token, supabaseKey);
+    // Check if this is a service role JWT by examining the role claim
+    // The JWT signature is already verified by Supabase's API gateway
+    // WARNING: Service role bypasses Row Level Security - only use for trusted automation
+    const isServiceRole = isServiceRoleToken(token);
 
     if (!isServiceRole) {
       // Try to authenticate as a user

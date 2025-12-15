@@ -38,23 +38,33 @@ function getCategorySlug(categoryName: string): string {
 }
 
 /**
- * Constant-time string comparison to prevent timing attacks.
- * Pads strings to equal length and compares all characters regardless of mismatch position.
+ * Decode a JWT and extract the payload without verifying the signature.
+ * The signature is already verified by Supabase's API gateway.
  */
-function constantTimeCompare(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
 
-  // Pad shorter string with null characters for constant-time comparison
-  const aPadded = a.padEnd(maxLen, '\0');
-  const bPadded = b.padEnd(maxLen, '\0');
-
-  let result = 0;
-  for (let i = 0; i < maxLen; i++) {
-    result |= aPadded.charCodeAt(i) ^ bPadded.charCodeAt(i);
+    // Base64url decode the payload (second part)
+    const payload = parts[1];
+    // Replace URL-safe characters and add padding
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const decoded = atob(padded);
+    return JSON.parse(decoded);
+  } catch {
+    return null;
   }
+}
 
-  // Both XOR result must be 0 AND original lengths must match
-  return result === 0 && a.length === b.length;
+/**
+ * Check if a JWT token has the service_role claim.
+ * This is used for automated/scripted access to the edge function.
+ */
+function isServiceRoleToken(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  return payload?.role === 'service_role';
 }
 
 function formatTopicBody(question: Question): string {
@@ -233,53 +243,80 @@ describe('sync-discourse-topics edge function', () => {
     });
   });
 
-  describe('constantTimeCompare', () => {
-    it('returns true for identical strings', () => {
-      expect(constantTimeCompare('abc', 'abc')).toBe(true);
-      expect(constantTimeCompare('test-key-123', 'test-key-123')).toBe(true);
-      expect(constantTimeCompare('', '')).toBe(true);
+  describe('decodeJwtPayload', () => {
+    // Sample JWTs for testing (these are test tokens, not real credentials)
+    // Header: {"alg":"HS256","typ":"JWT"}
+    // Payload varies per test
+
+    it('decodes a valid JWT payload with service_role', () => {
+      // Payload: {"iss":"supabase","role":"service_role","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2NDIwMDAwMDB9.signature';
+      const payload = decodeJwtPayload(token);
+      expect(payload).not.toBeNull();
+      expect(payload?.iss).toBe('supabase');
+      expect(payload?.role).toBe('service_role');
     });
 
-    it('returns false for different strings of same length', () => {
-      expect(constantTimeCompare('abc', 'abd')).toBe(false);
-      expect(constantTimeCompare('abc', 'xyz')).toBe(false);
-      expect(constantTimeCompare('aaa', 'aab')).toBe(false);
+    it('decodes a valid JWT payload with anon role', () => {
+      // Payload: {"iss":"supabase","role":"anon","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQyMDAwMDAwfQ.signature';
+      const payload = decodeJwtPayload(token);
+      expect(payload).not.toBeNull();
+      expect(payload?.role).toBe('anon');
     });
 
-    it('returns false for different length strings', () => {
-      expect(constantTimeCompare('abc', 'abcd')).toBe(false);
-      expect(constantTimeCompare('abcd', 'abc')).toBe(false);
-      expect(constantTimeCompare('a', 'aa')).toBe(false);
-      expect(constantTimeCompare('', 'a')).toBe(false);
+    it('returns null for invalid JWT format (not 3 parts)', () => {
+      expect(decodeJwtPayload('invalid')).toBeNull();
+      expect(decodeJwtPayload('only.two')).toBeNull();
+      expect(decodeJwtPayload('one.two.three.four')).toBeNull();
     });
 
-    it('handles special characters', () => {
-      expect(constantTimeCompare('key-with-dashes', 'key-with-dashes')).toBe(true);
-      expect(constantTimeCompare('key_with_underscores', 'key_with_underscores')).toBe(true);
-      expect(constantTimeCompare('key.with.dots', 'key.with.dots')).toBe(true);
+    it('returns null for invalid base64 in payload', () => {
+      expect(decodeJwtPayload('header.!!!invalid!!!.signature')).toBeNull();
     });
 
-    it('handles unicode characters', () => {
-      expect(constantTimeCompare('héllo', 'héllo')).toBe(true);
-      expect(constantTimeCompare('héllo', 'hello')).toBe(false);
+    it('returns null for empty string', () => {
+      expect(decodeJwtPayload('')).toBeNull();
     });
 
-    it('is case sensitive', () => {
-      expect(constantTimeCompare('ABC', 'abc')).toBe(false);
-      expect(constantTimeCompare('Test', 'test')).toBe(false);
+    it('handles URL-safe base64 characters (- and _)', () => {
+      // Payload with URL-safe chars: {"sub":"user-id_test","role":"authenticated"}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWlkX3Rlc3QiLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.signature';
+      const payload = decodeJwtPayload(token);
+      expect(payload).not.toBeNull();
+      expect(payload?.sub).toBe('user-id_test');
+      expect(payload?.role).toBe('authenticated');
+    });
+  });
+
+  describe('isServiceRoleToken', () => {
+    it('returns true for service_role JWT', () => {
+      // Payload: {"iss":"supabase","role":"service_role","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2NDIwMDAwMDB9.signature';
+      expect(isServiceRoleToken(token)).toBe(true);
     });
 
-    it('handles long strings (like API keys)', () => {
-      const key1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY0MjAwMDAwMCwiZXhwIjoxOTU3NTc2MDAwfQ.abc123def456';
-      const key2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY0MjAwMDAwMCwiZXhwIjoxOTU3NTc2MDAwfQ.abc123def456';
-      const key3 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY0MjAwMDAwMCwiZXhwIjoxOTU3NTc2MDAwfQ.xyz789abc123';
-      expect(constantTimeCompare(key1, key2)).toBe(true);
-      expect(constantTimeCompare(key1, key3)).toBe(false);
+    it('returns false for anon role JWT', () => {
+      // Payload: {"iss":"supabase","role":"anon","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQyMDAwMDAwfQ.signature';
+      expect(isServiceRoleToken(token)).toBe(false);
     });
 
-    it('compares strings with null characters correctly', () => {
-      expect(constantTimeCompare('a\0b', 'a\0b')).toBe(true);
-      expect(constantTimeCompare('a\0b', 'a\0c')).toBe(false);
+    it('returns false for authenticated user JWT', () => {
+      // Payload: {"sub":"user-123","role":"authenticated","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiaWF0IjoxNjQyMDAwMDAwfQ.signature';
+      expect(isServiceRoleToken(token)).toBe(false);
+    });
+
+    it('returns false for invalid JWT', () => {
+      expect(isServiceRoleToken('not-a-jwt')).toBe(false);
+      expect(isServiceRoleToken('')).toBe(false);
+    });
+
+    it('returns false for JWT without role claim', () => {
+      // Payload: {"iss":"supabase","iat":1642000000}
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTY0MjAwMDAwMH0.signature';
+      expect(isServiceRoleToken(token)).toBe(false);
     });
   });
 
