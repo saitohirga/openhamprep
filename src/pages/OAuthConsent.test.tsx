@@ -5,12 +5,9 @@ import OAuthConsent from './OAuthConsent';
 import { BrowserRouter } from 'react-router-dom';
 import React from 'react';
 
-// Mock the useOAuthConsent hook
-const mockHandleApprove = vi.fn();
-const mockHandleDeny = vi.fn();
-
-vi.mock('@/hooks/useOAuthConsent', () => ({
-  useOAuthConsent: () => ({
+// Mock the useOAuthConsent hook with vi.hoisted
+const { mockHookReturn } = vi.hoisted(() => ({
+  mockHookReturn: {
     isLoading: false,
     error: null,
     authorizationDetails: {
@@ -22,9 +19,14 @@ vi.mock('@/hooks/useOAuthConsent', () => ({
     forumUsername: null,
     hasExistingConsent: false,
     isProcessing: false,
-    handleApprove: mockHandleApprove,
-    handleDeny: mockHandleDeny,
-  }),
+    isAutoApproving: false,
+    handleApprove: vi.fn(),
+    handleDeny: vi.fn(),
+  },
+}));
+
+vi.mock('@/hooks/useOAuthConsent', () => ({
+  useOAuthConsent: () => mockHookReturn,
 }));
 
 const renderOAuthConsent = () => {
@@ -38,6 +40,21 @@ const renderOAuthConsent = () => {
 describe('OAuthConsent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset to default state
+    mockHookReturn.isLoading = false;
+    mockHookReturn.error = null;
+    mockHookReturn.authorizationDetails = {
+      client_id: 'test-client',
+      client_name: 'Test Application',
+      redirect_uri: 'https://example.com/callback',
+      scopes: ['openid', 'email', 'profile'],
+    };
+    mockHookReturn.forumUsername = null;
+    mockHookReturn.hasExistingConsent = false;
+    mockHookReturn.isProcessing = false;
+    mockHookReturn.isAutoApproving = false;
+    mockHookReturn.handleApprove = vi.fn();
+    mockHookReturn.handleDeny = vi.fn();
   });
 
   describe('Rendering', () => {
@@ -85,6 +102,19 @@ describe('OAuthConsent', () => {
       expect(screen.getByRole('button', { name: /authorize/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /deny/i })).toBeInTheDocument();
     });
+
+    it('shows unknown scope as-is when not in scopeDescriptions', () => {
+      mockHookReturn.authorizationDetails = {
+        client_id: 'test-client',
+        client_name: 'Test App',
+        redirect_uri: 'https://example.com/callback',
+        scopes: ['custom_scope'],
+      };
+
+      renderOAuthConsent();
+
+      expect(screen.getByText('custom_scope')).toBeInTheDocument();
+    });
   });
 
   describe('User Interactions', () => {
@@ -94,7 +124,7 @@ describe('OAuthConsent', () => {
 
       await user.click(screen.getByRole('button', { name: /deny/i }));
 
-      expect(mockHandleDeny).toHaveBeenCalled();
+      expect(mockHookReturn.handleDeny).toHaveBeenCalled();
     });
 
     it('calls handleApprove when Authorize button is clicked with forum username', async () => {
@@ -108,7 +138,7 @@ describe('OAuthConsent', () => {
       // Click authorize
       await user.click(screen.getByRole('button', { name: /authorize/i }));
 
-      expect(mockHandleApprove).toHaveBeenCalledWith('testuser', true);
+      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('testuser', true);
     });
 
     it('disables Authorize button when forum username is required but empty', () => {
@@ -128,104 +158,180 @@ describe('OAuthConsent', () => {
       await user.click(checkbox);
       expect(checkbox).not.toBeChecked();
     });
-  });
-});
 
-describe('OAuthConsent - Loading State', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    it('passes rememberDecision=false when checkbox is unchecked', async () => {
+      const user = userEvent.setup();
+      renderOAuthConsent();
 
-  it('shows loading spinner when isLoading is true', () => {
-    vi.doMock('@/hooks/useOAuthConsent', () => ({
-      useOAuthConsent: () => ({
-        isLoading: true,
-        error: null,
-        authorizationDetails: null,
-        forumUsername: null,
-        hasExistingConsent: false,
-        isProcessing: false,
-        handleApprove: vi.fn(),
-        handleDeny: vi.fn(),
-      }),
-    }));
+      // Uncheck the remember decision checkbox
+      const checkbox = screen.getByRole('checkbox');
+      await user.click(checkbox);
 
-    // Re-import to get the new mock
-    // Note: In practice, this test verifies the loading state exists
-    renderOAuthConsent();
-    // The component should handle loading state
-  });
-});
+      // Enter a forum username
+      const input = screen.getByPlaceholderText('Choose a username for the forum');
+      await user.type(input, 'testuser');
 
-describe('OAuthConsent - Error State', () => {
-  it('displays error message when there is an error', async () => {
-    vi.doMock('@/hooks/useOAuthConsent', () => ({
-      useOAuthConsent: () => ({
-        isLoading: false,
-        error: 'Test error message',
-        authorizationDetails: null,
-        forumUsername: null,
-        hasExistingConsent: false,
-        isProcessing: false,
-        handleApprove: vi.fn(),
-        handleDeny: vi.fn(),
-      }),
-    }));
+      // Click authorize
+      await user.click(screen.getByRole('button', { name: /authorize/i }));
 
-    // Note: The component should display error state
-    // This test verifies error handling exists
-  });
-});
-
-describe('OAuthConsent - Existing Forum Username', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('testuser', false);
+    });
   });
 
-  it('shows existing forum username when user has one', () => {
-    vi.doMock('@/hooks/useOAuthConsent', () => ({
-      useOAuthConsent: () => ({
-        isLoading: false,
-        error: null,
-        authorizationDetails: {
-          client_id: 'test-client',
-          client_name: 'Test Application',
-          redirect_uri: 'https://example.com/callback',
-          scopes: ['openid', 'email'],
-        },
-        forumUsername: 'existinguser',
-        hasExistingConsent: false,
-        isProcessing: false,
-        handleApprove: vi.fn(),
-        handleDeny: vi.fn(),
-      }),
-    }));
+  describe('Loading State', () => {
+    it('shows loading spinner when isLoading is true', () => {
+      mockHookReturn.isLoading = true;
+      mockHookReturn.authorizationDetails = null;
 
-    // Note: When user has existing username, it should be displayed
-    // and the input should not be shown
+      renderOAuthConsent();
+
+      expect(screen.getByText('Loading authorization request...')).toBeInTheDocument();
+    });
+
+    it('shows auto-approving message when isAutoApproving is true', () => {
+      mockHookReturn.isLoading = false;
+      mockHookReturn.isAutoApproving = true;
+
+      renderOAuthConsent();
+
+      expect(screen.getByText(/already authorized this app/)).toBeInTheDocument();
+      expect(screen.getByText(/Redirecting/)).toBeInTheDocument();
+    });
   });
-});
 
-describe('OAuthConsent - Processing State', () => {
-  it('disables buttons when isProcessing is true', () => {
-    vi.doMock('@/hooks/useOAuthConsent', () => ({
-      useOAuthConsent: () => ({
-        isLoading: false,
-        error: null,
-        authorizationDetails: {
-          client_id: 'test-client',
-          client_name: 'Test Application',
-          redirect_uri: 'https://example.com/callback',
-          scopes: ['openid', 'email'],
-        },
-        forumUsername: 'testuser',
-        hasExistingConsent: false,
-        isProcessing: true,
-        handleApprove: vi.fn(),
-        handleDeny: vi.fn(),
-      }),
-    }));
+  describe('Error State', () => {
+    it('displays error message when there is an error', () => {
+      mockHookReturn.error = 'Test error message';
+      mockHookReturn.authorizationDetails = null;
 
-    // Note: Buttons should be disabled during processing
+      renderOAuthConsent();
+
+      expect(screen.getByText('Authorization Error')).toBeInTheDocument();
+      expect(screen.getByText('Test error message')).toBeInTheDocument();
+    });
+
+    it('shows Go Back button in error state', () => {
+      mockHookReturn.error = 'Test error message';
+      mockHookReturn.authorizationDetails = null;
+
+      renderOAuthConsent();
+
+      expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('Existing Forum Username', () => {
+    it('shows existing forum username when user has one', () => {
+      mockHookReturn.forumUsername = 'existinguser';
+
+      renderOAuthConsent();
+
+      expect(screen.getByText('existinguser')).toBeInTheDocument();
+      expect(screen.getByText(/You can change this in your profile settings/)).toBeInTheDocument();
+    });
+
+    it('does not show username input when user has existing username', () => {
+      mockHookReturn.forumUsername = 'existinguser';
+
+      renderOAuthConsent();
+
+      expect(screen.queryByPlaceholderText('Choose a username for the forum')).not.toBeInTheDocument();
+    });
+
+    it('enables Authorize button when user has existing username', () => {
+      mockHookReturn.forumUsername = 'existinguser';
+
+      renderOAuthConsent();
+
+      const authorizeButton = screen.getByRole('button', { name: /authorize/i });
+      expect(authorizeButton).not.toBeDisabled();
+    });
+
+    it('passes existing username to handleApprove when user has one', async () => {
+      const user = userEvent.setup();
+      mockHookReturn.forumUsername = 'existinguser';
+
+      renderOAuthConsent();
+
+      await user.click(screen.getByRole('button', { name: /authorize/i }));
+
+      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('existinguser', true);
+    });
+  });
+
+  describe('Processing State', () => {
+    it('disables Authorize button when isProcessing is true', () => {
+      mockHookReturn.forumUsername = 'testuser';
+      mockHookReturn.isProcessing = true;
+
+      renderOAuthConsent();
+
+      expect(screen.getByRole('button', { name: /processing/i })).toBeDisabled();
+    });
+
+    it('disables Deny button when isProcessing is true', () => {
+      mockHookReturn.forumUsername = 'testuser';
+      mockHookReturn.isProcessing = true;
+
+      renderOAuthConsent();
+
+      expect(screen.getByRole('button', { name: /deny/i })).toBeDisabled();
+    });
+
+    it('shows Processing... text on Authorize button during processing', () => {
+      mockHookReturn.forumUsername = 'testuser';
+      mockHookReturn.isProcessing = true;
+
+      renderOAuthConsent();
+
+      expect(screen.getByText('Processing...')).toBeInTheDocument();
+    });
+
+    it('disables username input when isProcessing is true', () => {
+      mockHookReturn.isProcessing = true;
+
+      renderOAuthConsent();
+
+      const input = screen.getByPlaceholderText('Choose a username for the forum');
+      expect(input).toBeDisabled();
+    });
+
+    it('disables remember checkbox when isProcessing is true', () => {
+      mockHookReturn.isProcessing = true;
+
+      renderOAuthConsent();
+
+      const checkbox = screen.getByRole('checkbox');
+      expect(checkbox).toBeDisabled();
+    });
+  });
+
+  describe('Null Authorization Details', () => {
+    it('returns null when authorizationDetails is null and not loading/error', () => {
+      mockHookReturn.authorizationDetails = null;
+
+      const { container } = renderOAuthConsent();
+
+      expect(container.firstChild).toBeNull();
+    });
+  });
+
+  describe('Required Username Indicator', () => {
+    it('shows required indicator (*) when user needs to set forum username', () => {
+      mockHookReturn.forumUsername = null;
+
+      renderOAuthConsent();
+
+      // The label should have a required indicator
+      expect(screen.getByText('*')).toBeInTheDocument();
+    });
+
+    it('does not show required indicator when user has forum username', () => {
+      mockHookReturn.forumUsername = 'existinguser';
+
+      renderOAuthConsent();
+
+      expect(screen.queryByText('*')).not.toBeInTheDocument();
+    });
   });
 });

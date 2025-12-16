@@ -15,6 +15,7 @@ export default function OAuthConsent() {
     authorizationDetails,
     forumUsername,
     isProcessing,
+    isAutoApproving,
     handleApprove,
     handleDeny,
   } = useOAuthConsent();
@@ -25,12 +26,16 @@ export default function OAuthConsent() {
   // Use existing forum username if available
   const effectiveForumUsername = newForumUsername || forumUsername || '';
 
-  if (isLoading) {
+  if (isLoading || isAutoApproving) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground">Loading authorization request...</p>
+          <p className="text-muted-foreground">
+            {isAutoApproving
+              ? "You've already authorized this app. Redirecting..."
+              : 'Loading authorization request...'}
+          </p>
         </div>
       </div>
     );

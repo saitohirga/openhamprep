@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { validateForumUsername } from '@/lib/validation';
+
+const LOG_PREFIX = '[OAuth]';
 
 interface AuthorizationDetails {
   client_id: string;
@@ -19,8 +22,23 @@ interface UseOAuthConsentReturn {
   forumUsername: string | null;
   hasExistingConsent: boolean;
   isProcessing: boolean;
+  isAutoApproving: boolean;
   handleApprove: (forumUsername: string, rememberDecision: boolean) => Promise<void>;
   handleDeny: () => Promise<void>;
+}
+
+/**
+ * Helper to safely call Supabase OAuth API methods
+ * Throws a clear error if OAuth server is not enabled
+ */
+async function callOAuthApi<T>(
+  method: (() => Promise<{ data: T | null; error: Error | null }>) | undefined,
+  methodName: string
+): Promise<{ data: T | null; error: Error | null }> {
+  if (!method) {
+    return { data: null, error: new Error(`OAuth server not enabled: ${methodName} is not available`) };
+  }
+  return method();
 }
 
 export function useOAuthConsent(): UseOAuthConsentReturn {
@@ -34,12 +52,33 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
   const [forumUsername, setForumUsername] = useState<string | null>(null);
   const [hasExistingConsent, setHasExistingConsent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAutoApproving, setIsAutoApproving] = useState(false);
 
   const authorizationId = searchParams.get('authorization_id');
 
-  const autoApprove = useCallback(async () => {
+  // Use ref to track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const autoApprove = useCallback(async (authId: string) => {
+    if (!authId) {
+      console.error(LOG_PREFIX, 'Auto-approve called without authorization ID');
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.auth.oauth?.approveAuthorization?.(authorizationId!) ?? { data: null, error: new Error('OAuth server not enabled') };
+      setIsAutoApproving(true);
+
+      const { data, error } = await callOAuthApi(
+        supabase.auth.oauth?.approveAuthorization?.bind(supabase.auth.oauth, authId),
+        'approveAuthorization'
+      );
 
       if (error) throw error;
 
@@ -47,20 +86,30 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
         window.location.href = data.redirect_to;
       }
     } catch (err) {
-      console.error('Auto-approve failed:', err);
-      setError(err instanceof Error ? err.message : 'Auto-approval failed');
-      setIsLoading(false);
+      console.error(LOG_PREFIX, 'Auto-approve failed:', err);
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Auto-approval failed');
+        setIsLoading(false);
+        setIsAutoApproving(false);
+      }
     }
-  }, [authorizationId]);
+  }, []);
 
-  const fetchAuthorizationDetails = useCallback(async (userId: string) => {
+  const fetchAuthorizationDetails = useCallback(async (userId: string, authId: string) => {
+    if (!authId) {
+      console.error(LOG_PREFIX, 'fetchAuthorizationDetails called without authorization ID');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
       // Get authorization details from Supabase OAuth server
-      // Note: This API may need to be adjusted based on actual Supabase OAuth 2.1 API
-      const { data: authDetails, error: authError } = await supabase.auth.oauth?.getAuthorizationDetails?.(authorizationId!) ?? { data: null, error: new Error('OAuth server not enabled') };
+      const { data: authDetails, error: authError } = await callOAuthApi(
+        supabase.auth.oauth?.getAuthorizationDetails?.bind(supabase.auth.oauth, authId),
+        'getAuthorizationDetails'
+      );
 
       if (authError) {
         throw authError;
@@ -70,55 +119,62 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
         throw new Error('Failed to fetch authorization details');
       }
 
+      const clientId = authDetails.client_id;
+
       setAuthorizationDetails({
-        client_id: authDetails.client_id,
+        client_id: clientId,
         client_name: authDetails.client_name || 'Unknown Application',
         redirect_uri: authDetails.redirect_uri,
         scopes: authDetails.scopes || [],
         state: authDetails.state,
       });
 
-      // Fetch user's forum username from profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('forum_username')
-        .eq('id', userId)
-        .single();
+      // Fetch profile and check consent in parallel for better performance
+      const [profileResult, consentResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('forum_username')
+          .eq('id', userId)
+          .single(),
+        supabase
+          .from('oauth_consents')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('client_id', clientId)
+          .maybeSingle()
+      ]);
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError);
+      if (profileResult.error && profileResult.error.code !== 'PGRST116') {
+        console.error(LOG_PREFIX, 'Error fetching profile:', profileResult.error);
       }
 
-      setForumUsername(profile?.forum_username || null);
-
-      // Check for existing consent
-      const { data: existingConsent, error: consentError } = await supabase
-        .from('oauth_consents')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('client_id', authDetails.client_id)
-        .maybeSingle();
-
-      if (consentError) {
-        console.error('Error checking existing consent:', consentError);
+      if (consentResult.error) {
+        console.error(LOG_PREFIX, 'Error checking existing consent:', consentResult.error);
       }
 
-      const hasConsent = !!existingConsent;
+      if (!isMountedRef.current) return;
+
+      const userForumUsername = profileResult.data?.forum_username || null;
+      setForumUsername(userForumUsername);
+
+      const hasConsent = !!consentResult.data;
       setHasExistingConsent(hasConsent);
 
       // If user has existing consent AND has a forum username, auto-approve
-      if (hasConsent && profile?.forum_username) {
-        await autoApprove();
+      if (hasConsent && userForumUsername) {
+        await autoApprove(authId);
         return;
       }
 
       setIsLoading(false);
     } catch (err) {
-      console.error('Error in fetchAuthorizationDetails:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load authorization details');
-      setIsLoading(false);
+      console.error(LOG_PREFIX, 'Error in fetchAuthorizationDetails:', err);
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load authorization details');
+        setIsLoading(false);
+      }
     }
-  }, [authorizationId, autoApprove]);
+  }, [autoApprove]);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -139,26 +195,34 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
     }
 
     // Fetch authorization details and user profile
-    fetchAuthorizationDetails(user.id);
+    fetchAuthorizationDetails(user.id, authorizationId);
   }, [user, authLoading, authorizationId, navigate, fetchAuthorizationDetails]);
 
   async function handleApprove(newForumUsername: string, rememberDecision: boolean) {
-    if (!authorizationDetails || !user) return;
+    // Guard against missing required state
+    if (!authorizationDetails || !user || !authorizationId) {
+      console.error(LOG_PREFIX, 'handleApprove called with missing state', {
+        hasAuthDetails: !!authorizationDetails,
+        hasUser: !!user,
+        hasAuthId: !!authorizationId
+      });
+      return;
+    }
 
     try {
       setIsProcessing(true);
 
       // Validate and save forum username if provided/changed
       if (newForumUsername && newForumUsername !== forumUsername) {
-        const trimmed = newForumUsername.trim();
-        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+        const validation = validateForumUsername(newForumUsername);
 
-        if (!usernameRegex.test(trimmed)) {
-          toast.error('Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens');
+        if (!validation.valid) {
+          toast.error(validation.error || 'Invalid forum username');
           setIsProcessing(false);
           return;
         }
 
+        const trimmed = newForumUsername.trim();
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ forum_username: trimmed })
@@ -168,6 +232,7 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
           if (updateError.code === '23505') {
             toast.error('This username is already taken');
           } else {
+            console.error(LOG_PREFIX, 'Failed to update forum username:', updateError);
             toast.error('Failed to save forum username');
           }
           setIsProcessing(false);
@@ -188,13 +253,16 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
           });
 
         if (consentError) {
-          console.error('Failed to save consent:', consentError);
+          console.error(LOG_PREFIX, 'Failed to save consent:', consentError);
           // Don't block the flow, just log the error
         }
       }
 
       // Approve the authorization
-      const { data, error } = await supabase.auth.oauth?.approveAuthorization?.(authorizationId!) ?? { data: null, error: new Error('OAuth server not enabled') };
+      const { data, error } = await callOAuthApi(
+        supabase.auth.oauth?.approveAuthorization?.bind(supabase.auth.oauth, authorizationId),
+        'approveAuthorization'
+      );
 
       if (error) throw error;
 
@@ -202,22 +270,33 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
         window.location.href = data.redirect_to;
       } else {
         toast.error('No redirect URL received');
-        setIsProcessing(false);
+        if (isMountedRef.current) {
+          setIsProcessing(false);
+        }
       }
     } catch (err) {
-      console.error('Approve failed:', err);
+      console.error(LOG_PREFIX, 'Approve failed:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to approve authorization');
-      setIsProcessing(false);
+      if (isMountedRef.current) {
+        setIsProcessing(false);
+      }
     }
   }
 
   async function handleDeny() {
-    if (!authorizationId) return;
+    // Guard against missing authorization ID
+    if (!authorizationId) {
+      console.error(LOG_PREFIX, 'handleDeny called without authorization ID');
+      return;
+    }
 
     try {
       setIsProcessing(true);
 
-      const { data, error } = await supabase.auth.oauth?.denyAuthorization?.(authorizationId) ?? { data: null, error: new Error('OAuth server not enabled') };
+      const { data, error } = await callOAuthApi(
+        supabase.auth.oauth?.denyAuthorization?.bind(supabase.auth.oauth, authorizationId),
+        'denyAuthorization'
+      );
 
       if (error) throw error;
 
@@ -228,9 +307,11 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
         navigate('/dashboard');
       }
     } catch (err) {
-      console.error('Deny failed:', err);
+      console.error(LOG_PREFIX, 'Deny failed:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to deny authorization');
-      setIsProcessing(false);
+      if (isMountedRef.current) {
+        setIsProcessing(false);
+      }
     }
   }
 
@@ -241,6 +322,7 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
     forumUsername,
     hasExistingConsent,
     isProcessing,
+    isAutoApproving,
     handleApprove,
     handleDeny,
   };

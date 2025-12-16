@@ -9,6 +9,7 @@ import { ThemeSelector } from "@/components/ThemeSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User, KeyRound, Palette, Trash2, AlertTriangle, Mail, MessageSquare } from "lucide-react";
+import { validateForumUsername } from "@/lib/validation";
 interface ProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -62,17 +63,12 @@ export function ProfileModal({
     }
   };
   const handleUpdateForumUsername = async () => {
+    const validation = validateForumUsername(forumUsername);
+    if (!validation.valid) {
+      toast.error(validation.error || "Invalid forum username");
+      return;
+    }
     const trimmed = forumUsername.trim();
-    if (!trimmed) {
-      toast.error("Forum username cannot be empty");
-      return;
-    }
-    // Validate format: alphanumeric, underscores, hyphens, 3-20 chars
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(trimmed)) {
-      toast.error("Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens");
-      return;
-    }
     setIsUpdatingForumUsername(true);
     try {
       const { error } = await supabase
