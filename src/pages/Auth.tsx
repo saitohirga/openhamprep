@@ -35,6 +35,10 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Get the returnTo URL from query params (used for OAuth consent flow)
+  const searchParams = new URLSearchParams(location.search);
+  const returnTo = searchParams.get('returnTo');
+
   // Check for email verification success in URL
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.substring(1));
@@ -57,9 +61,11 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // If there's a returnTo URL (e.g., from OAuth consent flow), redirect there
+      // Otherwise, go to home page
+      navigate(returnTo || '/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, returnTo]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string; confirmPassword?: string } = {};
@@ -102,7 +108,8 @@ export default function Auth() {
           }
         } else {
           toast.success('Welcome back!');
-          navigate('/');
+          // If there's a returnTo URL (e.g., from OAuth consent flow), redirect there
+          navigate(returnTo || '/');
         }
       } else {
         const { error } = await signUp(email, password, displayName || undefined);
@@ -151,15 +158,20 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     setFormError(null);
-    
+
     try {
+      // Preserve returnTo parameter through Google OAuth flow
+      const redirectUrl = returnTo
+        ? `${window.location.origin}/auth?returnTo=${encodeURIComponent(returnTo)}`
+        : `${window.location.origin}/auth`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`
+          redirectTo: redirectUrl
         }
       });
-      
+
       if (error) throw error;
     } catch (error: unknown) {
       setFormError(error instanceof Error ? error.message : 'Failed to sign in with Google');
