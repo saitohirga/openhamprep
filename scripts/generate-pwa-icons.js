@@ -7,6 +7,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
 const iconsDir = join(publicDir, 'icons');
 
+// PWA icon sizes: 192 and 512 are required, 384 is recommended
+const ICON_SIZES = [192, 384, 512];
+
+// Maskable icons need safe zone padding (10-20% per PWA spec).
+// Using 10% as the minimum safe zone to maximize icon visibility.
+// See: https://web.dev/articles/maskable-icon
+const SAFE_ZONE_PERCENTAGE = 0.1;
+
 // SVG icon with app branding colors (amber/orange theme)
 const createIconSvg = (size, padding = 0) => {
   const viewBox = 24;
@@ -26,13 +34,13 @@ const createIconSvg = (size, padding = 0) => {
 </svg>`;
 };
 
-// Maskable icons need safe zone padding (about 10% on each side)
+// Maskable icons need safe zone padding for adaptive icon support
 const createMaskableIconSvg = (size) => {
-  const safeZone = size * 0.1;
+  const safeZone = size * SAFE_ZONE_PERCENTAGE;
   return createIconSvg(size, safeZone);
 };
 
-// Apple touch icon with rounded corners background
+// Apple touch icon with extra padding for visual balance
 const createAppleTouchIconSvg = (size) => {
   const viewBox = 24;
   const padding = size * 0.15;
@@ -53,42 +61,45 @@ const createAppleTouchIconSvg = (size) => {
 };
 
 async function generateIcons() {
-  await mkdir(iconsDir, { recursive: true });
+  try {
+    await mkdir(iconsDir, { recursive: true });
 
-  const sizes = [192, 512];
+    // Generate regular icons
+    for (const size of ICON_SIZES) {
+      const svg = createIconSvg(size);
+      const pngBuffer = await sharp(Buffer.from(svg))
+        .png()
+        .toBuffer();
 
-  // Generate regular icons
-  for (const size of sizes) {
-    const svg = createIconSvg(size);
-    const pngBuffer = await sharp(Buffer.from(svg))
+      await writeFile(join(iconsDir, `icon-${size}.png`), pngBuffer);
+      console.log(`Generated icon-${size}.png`);
+    }
+
+    // Generate maskable icons
+    for (const size of ICON_SIZES) {
+      const svg = createMaskableIconSvg(size);
+      const pngBuffer = await sharp(Buffer.from(svg))
+        .png()
+        .toBuffer();
+
+      await writeFile(join(iconsDir, `icon-maskable-${size}.png`), pngBuffer);
+      console.log(`Generated icon-maskable-${size}.png`);
+    }
+
+    // Generate Apple touch icon (180x180)
+    const appleTouchSvg = createAppleTouchIconSvg(180);
+    const appleTouchBuffer = await sharp(Buffer.from(appleTouchSvg))
       .png()
       .toBuffer();
 
-    await writeFile(join(iconsDir, `icon-${size}.png`), pngBuffer);
-    console.log(`Generated icon-${size}.png`);
+    await writeFile(join(publicDir, 'apple-touch-icon.png'), appleTouchBuffer);
+    console.log('Generated apple-touch-icon.png');
+
+    console.log('\nAll PWA icons generated successfully!');
+  } catch (error) {
+    console.error('Failed to generate PWA icons:', error);
+    process.exit(1);
   }
-
-  // Generate maskable icons
-  for (const size of sizes) {
-    const svg = createMaskableIconSvg(size);
-    const pngBuffer = await sharp(Buffer.from(svg))
-      .png()
-      .toBuffer();
-
-    await writeFile(join(iconsDir, `icon-maskable-${size}.png`), pngBuffer);
-    console.log(`Generated icon-maskable-${size}.png`);
-  }
-
-  // Generate Apple touch icon (180x180)
-  const appleTouchSvg = createAppleTouchIconSvg(180);
-  const appleTouchBuffer = await sharp(Buffer.from(appleTouchSvg))
-    .png()
-    .toBuffer();
-
-  await writeFile(join(publicDir, 'apple-touch-icon.png'), appleTouchBuffer);
-  console.log('Generated apple-touch-icon.png');
-
-  console.log('\nAll PWA icons generated successfully!');
 }
 
-generateIcons().catch(console.error);
+generateIcons();

@@ -36,6 +36,7 @@ describe('PWA Configuration', () => {
 
       const sizes = manifest.icons.map((icon: { sizes: string }) => icon.sizes);
       expect(sizes).toContain('192x192');
+      expect(sizes).toContain('384x384');
       expect(sizes).toContain('512x512');
     });
 
@@ -95,6 +96,11 @@ describe('PWA Configuration', () => {
       expect(() => readFileSync(iconPath)).not.toThrow();
     });
 
+    it('should have 384x384 icon', () => {
+      const iconPath = resolve(iconsDir, 'icon-384.png');
+      expect(() => readFileSync(iconPath)).not.toThrow();
+    });
+
     it('should have 512x512 icon', () => {
       const iconPath = resolve(iconsDir, 'icon-512.png');
       expect(() => readFileSync(iconPath)).not.toThrow();
@@ -102,6 +108,11 @@ describe('PWA Configuration', () => {
 
     it('should have maskable 192x192 icon', () => {
       const iconPath = resolve(iconsDir, 'icon-maskable-192.png');
+      expect(() => readFileSync(iconPath)).not.toThrow();
+    });
+
+    it('should have maskable 384x384 icon', () => {
+      const iconPath = resolve(iconsDir, 'icon-maskable-384.png');
       expect(() => readFileSync(iconPath)).not.toThrow();
     });
 
