@@ -53,7 +53,20 @@ supabase db push
    - `https://forum.openhamprep.com/auth/oidc/callback` (Discourse OIDC callback)
    - `http://localhost:8080/**` (local development)
 
-### Step 3: Configure Supabase OAuth 2.1 Server (Dashboard)
+### Step 3: Migrate JWT Algorithm to Asymmetric Signing (REQUIRED for OIDC)
+
+**CRITICAL**: OpenID Connect requires asymmetric JWT signing. Supabase projects default to HS256 (symmetric), which will cause "Error generating ID token" failures.
+
+1. Go to **Project Settings** > **API** (or **Auth** section)
+2. Find **JWT Signing Keys** or **JWT Algorithm**
+3. Add a new **ECC (P-256)** or **RS256** asymmetric key
+4. **Set the new key as active/default** for signing
+5. Note: This invalidates existing sessions - users will need to log in again
+
+After migration, your JWKS endpoint will be available at:
+`https://api.openhamprep.com/auth/v1/.well-known/jwks.json`
+
+### Step 4: Configure Supabase OAuth 2.1 Server (Dashboard)
 
 1. Navigate to **Authentication** > **OAuth Server** (or **OAuth 2.1 Server**)
 2. Click **Enable OAuth 2.1 Server** if not already enabled
@@ -61,7 +74,6 @@ supabase db push
    - **Site URL**: `app.openhamprep.com` (where your React app is hosted)
    - **Authorization Path**: `/oauth/consent`
    - The Preview Authorization URL should show: `app.openhamprep.com/oauth/consent`
-   - **JWT signing**: If using OIDC (recommended), switch to RS256 asymmetric signing
 4. Register Discourse as an OAuth client:
    - Click **Add Client** (or **New Client**)
    - **Name**: `Open Ham Prep Forum`
@@ -71,7 +83,7 @@ supabase db push
 
 **IMPORTANT**: The Site URL in Supabase URL Configuration must match where your app is hosted (`app.openhamprep.com`). The OAuth Server uses this Site URL + Authorization Path to construct the full consent URL.
 
-### Step 4: Configure Discourse (OIDC Plugin - Recommended)
+### Step 5: Configure Discourse (OIDC Plugin - Recommended)
 
 We recommend using the **discourse-openid-connect** plugin instead of oauth2-basic because it:
 - Has native PKCE support (required by OAuth 2.1)
@@ -104,7 +116,7 @@ We recommend using the **discourse-openid-connect** plugin instead of oauth2-bas
 
 The URLs above use the custom domain `api.openhamprep.com`. If you're self-hosting with a different Supabase project, replace with your project URL (e.g., `https://<project-ref>.supabase.co`).
 
-### Step 5: Test the Integration
+### Step 6: Test the Integration
 
 1. Go to https://forum.openhamprep.com
 2. Click "Log In" or "Sign Up"
@@ -141,7 +153,12 @@ The URLs above use the custom domain `api.openhamprep.com`. If you're self-hosti
    - The callback with authorization code
    - Any failed requests to token/userinfo endpoints
 
-### Step 6: (Optional) Custom Access Token Hook
+8. **"Error generating ID token" (500 error)**: This means Supabase cannot generate OIDC ID tokens.
+   - **Cause**: Your project is still using HS256 (symmetric) JWT signing
+   - **Fix**: Complete Step 3 above - migrate to ECC (P-256) or RS256 asymmetric signing
+   - This is a hard requirement of the OpenID Connect specification
+
+### Step 7: (Optional) Custom Access Token Hook
 
 To include `forum_username` in the userinfo response, you may need to create a Supabase Edge Function hook. This is optional - the basic integration works without it.
 

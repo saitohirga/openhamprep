@@ -271,7 +271,7 @@ describe('DashboardSidebar', () => {
       render(<DashboardSidebar {...defaultProps} />, { wrapper: createWrapper() });
 
       const forumLink = screen.getByText('Forum').closest('a');
-      expect(forumLink).toHaveAttribute('href', 'https://forum.openhamprep.com/');
+      expect(forumLink).toHaveAttribute('href', 'https://forum.openhamprep.com/auth/oidc');
       expect(forumLink).toHaveAttribute('target', '_blank');
       expect(forumLink).toHaveAttribute('rel', 'noopener noreferrer');
     });
