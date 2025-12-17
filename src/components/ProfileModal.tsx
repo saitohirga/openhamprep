@@ -147,6 +147,28 @@ export function ProfileModal({
     }
     setIsDeleting(true);
     try {
+      // Step 1: Delete from Discourse forum (if user has an account there)
+      // This must happen first while we still have the user's auth token
+      // The edge function handles auth validation - supabase.functions.invoke() automatically
+      // includes the Authorization header from the current session
+      try {
+        const discourseResponse = await supabase.functions.invoke('delete-discourse-user', {
+          body: { deletePosts: false },
+        });
+
+        if (discourseResponse.error) {
+          // Don't block local deletion if Discourse deletion fails
+          // The user might not have a Discourse account, or the forum might be unavailable
+          console.error('Discourse deletion error:', discourseResponse.error);
+        } else if (discourseResponse.data?.discourseAccountFound) {
+          console.log('Discourse account deleted:', discourseResponse.data.discourseUsername);
+        }
+      } catch (discourseError) {
+        // Log but don't block - Discourse deletion is best-effort
+        console.error('Failed to delete Discourse account:', discourseError);
+      }
+
+      // Step 2: Delete from local database
       // Call RPC function to delete the user from auth.users
       // This will cascade delete to profiles and all related data
       // Security: The function uses auth.uid() to ensure users can only delete themselves
@@ -316,7 +338,7 @@ export function ProfileModal({
                       This action cannot be undone
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      All your data including practice history, bookmarks, and test results will be permanently deleted.
+                      All your data including practice history, bookmarks, test results, and your forum account (if any) will be permanently deleted.
                     </p>
                   </div>
                 </div>
