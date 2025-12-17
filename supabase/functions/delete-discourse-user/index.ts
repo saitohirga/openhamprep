@@ -10,6 +10,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *
  * The user can only delete their own Discourse account - the function
  * uses the authenticated user's ID from the JWT.
+ *
+ * Environment variables:
+ * - DISCOURSE_URL: Base URL of the Discourse forum (default: https://forum.openhamprep.com)
+ * - DISCOURSE_API_KEY: API key from Discourse admin panel (required)
+ * - DISCOURSE_USERNAME: Admin username for API calls (required)
+ * - SUPABASE_URL: Supabase project URL (auto-set by Supabase)
+ * - SUPABASE_SERVICE_ROLE_KEY: Service role key (auto-set by Supabase)
  */
 
 const corsHeaders = {
@@ -17,9 +24,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DISCOURSE_URL = 'https://forum.openhamprep.com';
+const DEFAULT_DISCOURSE_URL = 'https://forum.openhamprep.com';
 
-function getDiscourseConfig(): { apiKey: string; username: string } {
+interface DiscourseConfig {
+  url: string;
+  apiKey: string;
+  username: string;
+}
+
+function getDiscourseConfig(): DiscourseConfig {
   const apiKey = Deno.env.get('DISCOURSE_API_KEY');
   if (!apiKey) {
     throw new Error('DISCOURSE_API_KEY environment variable is required');
@@ -30,7 +43,20 @@ function getDiscourseConfig(): { apiKey: string; username: string } {
     throw new Error('DISCOURSE_USERNAME environment variable is required');
   }
 
-  return { apiKey, username };
+  const url = Deno.env.get('DISCOURSE_URL') || DEFAULT_DISCOURSE_URL;
+
+  return { url, apiKey, username };
+}
+
+function getSupabaseConfig(): { url: string; serviceRoleKey: string } {
+  const url = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!url || !serviceRoleKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required');
+  }
+
+  return { url, serviceRoleKey };
 }
 
 interface DiscourseUser {
@@ -39,23 +65,46 @@ interface DiscourseUser {
   email: string;
 }
 
+interface ApiResponse {
+  success: boolean;
+  error?: string;
+  discourseAccountFound?: boolean;
+  discourseUsername?: string;
+  message?: string;
+}
+
+function errorResponse(error: string, status: number): Response {
+  const body: ApiResponse = { success: false, error };
+  return new Response(
+    JSON.stringify(body),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+function successResponse(data: Omit<ApiResponse, 'success'>): Response {
+  const body: ApiResponse = { success: true, ...data };
+  return new Response(
+    JSON.stringify(body),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 /**
  * Find a Discourse user by their external_id (our Supabase user ID).
  * This is set when users authenticate via OIDC SSO.
  */
 async function findDiscourseUserByExternalId(
-  apiKey: string,
-  adminUsername: string,
+  config: DiscourseConfig,
   externalId: string
 ): Promise<DiscourseUser | null> {
   try {
     // Discourse provides an endpoint to look up users by external_id
     const response = await fetch(
-      `${DISCOURSE_URL}/u/by-external/${encodeURIComponent(externalId)}.json`,
+      `${config.url}/u/by-external/${encodeURIComponent(externalId)}.json`,
       {
         headers: {
-          'Api-Key': apiKey,
-          'Api-Username': adminUsername,
+          'Api-Key': config.apiKey,
+          'Api-Username': config.username,
         },
       }
     );
@@ -89,12 +138,12 @@ async function findDiscourseUserByExternalId(
  * Options:
  * - delete_posts: Whether to delete all posts by this user (default: false)
  * - block_email: Whether to block the email from re-registering (default: false)
- * - block_urls: Whether to block any URLs in posts (default: false)
- * - block_ip: Whether to block the IP address (default: false)
+ *
+ * Note: Discourse API may rate limit requests. For high-volume scenarios,
+ * consider implementing retry logic with exponential backoff.
  */
 async function deleteDiscourseUser(
-  apiKey: string,
-  adminUsername: string,
+  config: DiscourseConfig,
   discourseUserId: number,
   options: {
     deletePosts?: boolean;
@@ -111,15 +160,19 @@ async function deleteDiscourseUser(
       params.append('block_email', 'true');
     }
 
-    const url = `${DISCOURSE_URL}/admin/users/${discourseUserId}.json${params.toString() ? '?' + params.toString() : ''}`;
+    const url = `${config.url}/admin/users/${discourseUserId}.json${params.toString() ? '?' + params.toString() : ''}`;
 
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'Api-Key': apiKey,
-        'Api-Username': adminUsername,
+        'Api-Key': config.apiKey,
+        'Api-Username': config.username,
       },
     });
+
+    if (response.status === 429) {
+      return { success: false, error: 'Discourse API rate limit exceeded. Please try again later.' };
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -144,27 +197,20 @@ serve(async (req) => {
   try {
     // Only allow POST requests
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Method not allowed', 405);
     }
 
-    // Get Discourse configuration
-    const { apiKey, username: adminUsername } = getDiscourseConfig();
+    // Get configuration (validates required env vars)
+    const discourseConfig = getDiscourseConfig();
+    const supabaseConfig = getSupabaseConfig();
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseConfig.url, supabaseConfig.serviceRoleKey);
 
     // Require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Unauthorized: Authentication required', 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -173,28 +219,21 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Unauthorized: Invalid token', 401);
     }
 
     console.log(`User ${user.id} requested Discourse account deletion`);
 
     // Look up the user in Discourse by their Supabase user ID (external_id)
-    const discourseUser = await findDiscourseUserByExternalId(apiKey, adminUsername, user.id);
+    const discourseUser = await findDiscourseUserByExternalId(discourseConfig, user.id);
 
     if (!discourseUser) {
       // User doesn't have a Discourse account - this is fine, return success
       console.log(`User ${user.id} has no Discourse account - nothing to delete`);
-      return new Response(
-        JSON.stringify({
-          success: true,
-          discourseAccountFound: false,
-          message: 'No Discourse account found for this user',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return successResponse({
+        discourseAccountFound: false,
+        message: 'No Discourse account found for this user',
+      });
     }
 
     console.log(`Found Discourse user: ${discourseUser.username} (ID: ${discourseUser.id})`);
@@ -204,7 +243,7 @@ serve(async (req) => {
     const deletePosts = body.deletePosts === true;
 
     // Delete the user from Discourse
-    const deleteResult = await deleteDiscourseUser(apiKey, adminUsername, discourseUser.id, {
+    const deleteResult = await deleteDiscourseUser(discourseConfig, discourseUser.id, {
       deletePosts,
       blockEmail: false, // Don't block - user might want to re-register
     });
@@ -224,22 +263,15 @@ serve(async (req) => {
 
     console.log(`Successfully deleted Discourse user ${discourseUser.username} (ID: ${discourseUser.id})`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        discourseAccountFound: true,
-        discourseUsername: discourseUser.username,
-        message: 'Discourse account deleted successfully',
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return successResponse({
+      discourseAccountFound: true,
+      discourseUsername: discourseUser.username,
+      message: 'Discourse account deleted successfully',
+    });
 
   } catch (error) {
     console.error('Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(errorMessage, 500);
   }
 });

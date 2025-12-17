@@ -149,24 +149,19 @@ export function ProfileModal({
     try {
       // Step 1: Delete from Discourse forum (if user has an account there)
       // This must happen first while we still have the user's auth token
+      // The edge function handles auth validation - supabase.functions.invoke() automatically
+      // includes the Authorization header from the current session
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.access_token) {
-          const discourseResponse = await supabase.functions.invoke('delete-discourse-user', {
-            body: { deletePosts: false },
-          });
+        const discourseResponse = await supabase.functions.invoke('delete-discourse-user', {
+          body: { deletePosts: false },
+        });
 
-          if (discourseResponse.error) {
-            console.error('Discourse deletion error:', discourseResponse.error);
-            // Don't block local deletion if Discourse deletion fails
-            // The user might not have a Discourse account
-          } else if (discourseResponse.data?.success) {
-            if (discourseResponse.data.discourseAccountFound) {
-              console.log('Discourse account deleted:', discourseResponse.data.discourseUsername);
-            } else {
-              console.log('No Discourse account found for user');
-            }
-          }
+        if (discourseResponse.error) {
+          // Don't block local deletion if Discourse deletion fails
+          // The user might not have a Discourse account, or the forum might be unavailable
+          console.error('Discourse deletion error:', discourseResponse.error);
+        } else if (discourseResponse.data?.discourseAccountFound) {
+          console.log('Discourse account deleted:', discourseResponse.data.discourseUsername);
         }
       } catch (discourseError) {
         // Log but don't block - Discourse deletion is best-effort
