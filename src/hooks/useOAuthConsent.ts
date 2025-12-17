@@ -20,11 +20,10 @@ interface UseOAuthConsentReturn {
   error: string | null;
   authorizationDetails: AuthorizationDetails | null;
   forumUsername: string | null;
-  hasExistingConsent: boolean;
   isProcessing: boolean;
   isAutoApproving: boolean;
-  handleApprove: (forumUsername: string, rememberDecision: boolean) => Promise<void>;
-  handleDeny: () => Promise<void>;
+  handleApprove: (forumUsername: string) => Promise<void>;
+  handleCancel: () => void;
 }
 
 /**
@@ -50,7 +49,6 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
   const [error, setError] = useState<string | null>(null);
   const [authorizationDetails, setAuthorizationDetails] = useState<AuthorizationDetails | null>(null);
   const [forumUsername, setForumUsername] = useState<string | null>(null);
-  const [hasExistingConsent, setHasExistingConsent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAutoApproving, setIsAutoApproving] = useState(false);
 
@@ -123,9 +121,8 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
       console.log(LOG_PREFIX, 'Authorization details received:', JSON.stringify(authDetails, null, 2));
 
       // Check if Supabase returned a redirect_url with authorization code already included
-      // This happens when consent was already granted (either via our oauth_consents table
-      // or Supabase's internal consent management). Per Supabase docs:
-      // "If the response includes a redirect_uri, it means consent was already given"
+      // This happens when consent was already granted via Supabase's internal consent management.
+      // Per Supabase docs: "If the response includes a redirect_uri, it means consent was already given"
       const preApprovedRedirectUrl = authDetails.redirect_url || authDetails.redirect_uri;
       if (preApprovedRedirectUrl && preApprovedRedirectUrl.includes('code=')) {
         console.log(LOG_PREFIX, 'Consent already granted, redirecting to:', preApprovedRedirectUrl);
@@ -156,39 +153,24 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
         state: authDetails.state,
       });
 
-      // Fetch profile and check consent in parallel for better performance
-      const [profileResult, consentResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('forum_username')
-          .eq('id', userId)
-          .single(),
-        supabase
-          .from('oauth_consents')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('client_id', clientId)
-          .maybeSingle()
-      ]);
+      // Fetch user's forum username
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('forum_username')
+        .eq('id', userId)
+        .single();
 
-      if (profileResult.error && profileResult.error.code !== 'PGRST116') {
-        console.error(LOG_PREFIX, 'Error fetching profile:', profileResult.error);
-      }
-
-      if (consentResult.error) {
-        console.error(LOG_PREFIX, 'Error checking existing consent:', consentResult.error);
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error(LOG_PREFIX, 'Error fetching profile:', profileError);
       }
 
       if (!isMountedRef.current) return;
 
-      const userForumUsername = profileResult.data?.forum_username || null;
+      const userForumUsername = profileData?.forum_username || null;
       setForumUsername(userForumUsername);
 
-      const hasConsent = !!consentResult.data;
-      setHasExistingConsent(hasConsent);
-
-      // If user has existing consent AND has a forum username, auto-approve
-      if (hasConsent && userForumUsername) {
+      // If user already has a forum username, auto-approve (no consent needed - we own both apps)
+      if (userForumUsername) {
         await autoApprove(authId);
         return;
       }
@@ -225,7 +207,7 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
     fetchAuthorizationDetails(user.id, authorizationId);
   }, [user, authLoading, authorizationId, navigate, fetchAuthorizationDetails]);
 
-  async function handleApprove(newForumUsername: string, rememberDecision: boolean) {
+  async function handleApprove(newForumUsername: string) {
     // Guard against missing required state
     if (!authorizationDetails || !user || !authorizationId) {
       console.error(LOG_PREFIX, 'handleApprove called with missing state', {
@@ -239,50 +221,30 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
     try {
       setIsProcessing(true);
 
-      // Validate and save forum username if provided/changed
-      if (newForumUsername && newForumUsername !== forumUsername) {
-        const validation = validateForumUsername(newForumUsername);
+      // Validate and save forum username
+      const validation = validateForumUsername(newForumUsername);
 
-        if (!validation.valid) {
-          toast.error(validation.error || 'Invalid forum username');
-          setIsProcessing(false);
-          return;
-        }
-
-        const trimmed = newForumUsername.trim();
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ forum_username: trimmed })
-          .eq('id', user.id);
-
-        if (updateError) {
-          if (updateError.code === '23505') {
-            toast.error('This username is already taken');
-          } else {
-            console.error(LOG_PREFIX, 'Failed to update forum username:', updateError);
-            toast.error('Failed to save forum username');
-          }
-          setIsProcessing(false);
-          return;
-        }
+      if (!validation.valid) {
+        toast.error(validation.error || 'Invalid forum username');
+        setIsProcessing(false);
+        return;
       }
 
-      // Save consent if "remember decision" is checked
-      if (rememberDecision) {
-        const { error: consentError } = await supabase
-          .from('oauth_consents')
-          .upsert({
-            user_id: user.id,
-            client_id: authorizationDetails.client_id,
-            scopes: authorizationDetails.scopes,
-          }, {
-            onConflict: 'user_id,client_id',
-          });
+      const trimmed = newForumUsername.trim();
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ forum_username: trimmed })
+        .eq('id', user.id);
 
-        if (consentError) {
-          console.error(LOG_PREFIX, 'Failed to save consent:', consentError);
-          // Don't block the flow, just log the error
+      if (updateError) {
+        if (updateError.code === '23505') {
+          toast.error('This username is already taken');
+        } else {
+          console.error(LOG_PREFIX, 'Failed to update forum username:', updateError);
+          toast.error('Failed to save forum username');
         }
+        setIsProcessing(false);
+        return;
       }
 
       // Approve the authorization
@@ -303,43 +265,16 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
       }
     } catch (err) {
       console.error(LOG_PREFIX, 'Approve failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to approve authorization');
+      toast.error(err instanceof Error ? err.message : 'Failed to continue');
       if (isMountedRef.current) {
         setIsProcessing(false);
       }
     }
   }
 
-  async function handleDeny() {
-    // Guard against missing authorization ID
-    if (!authorizationId) {
-      console.error(LOG_PREFIX, 'handleDeny called without authorization ID');
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-
-      const { data, error } = await callOAuthApi(
-        supabase.auth.oauth?.denyAuthorization?.bind(supabase.auth.oauth, authorizationId),
-        'denyAuthorization'
-      );
-
-      if (error) throw error;
-
-      if (data?.redirect_to) {
-        window.location.href = data.redirect_to;
-      } else {
-        // If no redirect, go back to dashboard
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      console.error(LOG_PREFIX, 'Deny failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to deny authorization');
-      if (isMountedRef.current) {
-        setIsProcessing(false);
-      }
-    }
+  function handleCancel() {
+    // Simply navigate back to dashboard
+    navigate('/dashboard');
   }
 
   return {
@@ -347,10 +282,9 @@ export function useOAuthConsent(): UseOAuthConsentReturn {
     error,
     authorizationDetails,
     forumUsername,
-    hasExistingConsent,
     isProcessing,
     isAutoApproving,
     handleApprove,
-    handleDeny,
+    handleCancel,
   };
 }

@@ -16,12 +16,10 @@ const { mockHookReturn } = vi.hoisted(() => ({
       redirect_uri: 'https://example.com/callback',
       scopes: ['openid', 'email', 'profile'],
     },
-    forumUsername: null,
-    hasExistingConsent: false,
     isProcessing: false,
     isAutoApproving: false,
     handleApprove: vi.fn(),
-    handleDeny: vi.fn(),
+    handleCancel: vi.fn(),
   },
 }));
 
@@ -49,132 +47,86 @@ describe('OAuthConsent', () => {
       redirect_uri: 'https://example.com/callback',
       scopes: ['openid', 'email', 'profile'],
     };
-    mockHookReturn.forumUsername = null;
-    mockHookReturn.hasExistingConsent = false;
     mockHookReturn.isProcessing = false;
     mockHookReturn.isAutoApproving = false;
     mockHookReturn.handleApprove = vi.fn();
-    mockHookReturn.handleDeny = vi.fn();
+    mockHookReturn.handleCancel = vi.fn();
   });
 
   describe('Rendering', () => {
-    it('renders the consent page with client name', () => {
+    it('renders the username creation page', () => {
       renderOAuthConsent();
 
-      expect(screen.getByText('Authorize Test Application')).toBeInTheDocument();
+      expect(screen.getByText('Create Your Forum Username')).toBeInTheDocument();
     });
 
     it('displays the description text', () => {
       renderOAuthConsent();
 
-      expect(screen.getByText(/requesting access to your Open Ham Prep account/)).toBeInTheDocument();
+      expect(screen.getByText(/Choose a username to use on the Open Ham Prep forum/)).toBeInTheDocument();
     });
 
-    it('shows the requested scopes', () => {
-      renderOAuthConsent();
-
-      expect(screen.getByText('Verify your identity')).toBeInTheDocument();
-      expect(screen.getByText('View your email address')).toBeInTheDocument();
-      expect(screen.getByText('View your profile information')).toBeInTheDocument();
-    });
-
-    it('renders the forum username section', () => {
+    it('renders the forum username input', () => {
       renderOAuthConsent();
 
       expect(screen.getByText('Forum Username')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Choose a username')).toBeInTheDocument();
     });
 
-    it('shows forum username input when user has no existing username', () => {
+    it('renders Continue and Cancel buttons', () => {
       renderOAuthConsent();
 
-      expect(screen.getByPlaceholderText('Choose a username for the forum')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /continue to forum/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     });
 
-    it('renders the remember decision checkbox', () => {
+    it('shows username requirements hint', () => {
       renderOAuthConsent();
 
-      expect(screen.getByText(/Remember this decision/)).toBeInTheDocument();
-    });
-
-    it('renders Authorize and Deny buttons', () => {
-      renderOAuthConsent();
-
-      expect(screen.getByRole('button', { name: /authorize/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /deny/i })).toBeInTheDocument();
-    });
-
-    it('shows unknown scope as-is when not in scopeDescriptions', () => {
-      mockHookReturn.authorizationDetails = {
-        client_id: 'test-client',
-        client_name: 'Test App',
-        redirect_uri: 'https://example.com/callback',
-        scopes: ['custom_scope'],
-      };
-
-      renderOAuthConsent();
-
-      expect(screen.getByText('custom_scope')).toBeInTheDocument();
+      expect(screen.getByText(/3-20 characters/)).toBeInTheDocument();
     });
   });
 
   describe('User Interactions', () => {
-    it('calls handleDeny when Deny button is clicked', async () => {
+    it('calls handleCancel when Cancel button is clicked', async () => {
       const user = userEvent.setup();
       renderOAuthConsent();
 
-      await user.click(screen.getByRole('button', { name: /deny/i }));
+      await user.click(screen.getByRole('button', { name: /cancel/i }));
 
-      expect(mockHookReturn.handleDeny).toHaveBeenCalled();
+      expect(mockHookReturn.handleCancel).toHaveBeenCalled();
     });
 
-    it('calls handleApprove when Authorize button is clicked with forum username', async () => {
+    it('calls handleApprove when Continue button is clicked with forum username', async () => {
       const user = userEvent.setup();
       renderOAuthConsent();
 
       // Enter a forum username
-      const input = screen.getByPlaceholderText('Choose a username for the forum');
+      const input = screen.getByPlaceholderText('Choose a username');
       await user.type(input, 'testuser');
 
-      // Click authorize
-      await user.click(screen.getByRole('button', { name: /authorize/i }));
+      // Click continue
+      await user.click(screen.getByRole('button', { name: /continue to forum/i }));
 
-      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('testuser', true);
+      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('testuser');
     });
 
-    it('disables Authorize button when forum username is required but empty', () => {
+    it('disables Continue button when forum username is empty', () => {
       renderOAuthConsent();
 
-      const authorizeButton = screen.getByRole('button', { name: /authorize/i });
-      expect(authorizeButton).toBeDisabled();
+      const continueButton = screen.getByRole('button', { name: /continue to forum/i });
+      expect(continueButton).toBeDisabled();
     });
 
-    it('allows unchecking the remember decision checkbox', async () => {
+    it('enables Continue button when forum username is entered', async () => {
       const user = userEvent.setup();
       renderOAuthConsent();
 
-      const checkbox = screen.getByRole('checkbox');
-      expect(checkbox).toBeChecked();
-
-      await user.click(checkbox);
-      expect(checkbox).not.toBeChecked();
-    });
-
-    it('passes rememberDecision=false when checkbox is unchecked', async () => {
-      const user = userEvent.setup();
-      renderOAuthConsent();
-
-      // Uncheck the remember decision checkbox
-      const checkbox = screen.getByRole('checkbox');
-      await user.click(checkbox);
-
-      // Enter a forum username
-      const input = screen.getByPlaceholderText('Choose a username for the forum');
+      const input = screen.getByPlaceholderText('Choose a username');
       await user.type(input, 'testuser');
 
-      // Click authorize
-      await user.click(screen.getByRole('button', { name: /authorize/i }));
-
-      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('testuser', false);
+      const continueButton = screen.getByRole('button', { name: /continue to forum/i });
+      expect(continueButton).not.toBeDisabled();
     });
   });
 
@@ -185,17 +137,16 @@ describe('OAuthConsent', () => {
 
       renderOAuthConsent();
 
-      expect(screen.getByText('Loading authorization request...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
-    it('shows auto-approving message when isAutoApproving is true', () => {
+    it('shows connecting message when isAutoApproving is true', () => {
       mockHookReturn.isLoading = false;
       mockHookReturn.isAutoApproving = true;
 
       renderOAuthConsent();
 
-      expect(screen.getByText(/already authorized this app/)).toBeInTheDocument();
-      expect(screen.getByText(/Redirecting/)).toBeInTheDocument();
+      expect(screen.getByText('Connecting to the forum...')).toBeInTheDocument();
     });
   });
 
@@ -220,71 +171,40 @@ describe('OAuthConsent', () => {
     });
   });
 
-  describe('Existing Forum Username', () => {
-    it('shows existing forum username when user has one', () => {
-      mockHookReturn.forumUsername = 'existinguser';
-
-      renderOAuthConsent();
-
-      expect(screen.getByText('existinguser')).toBeInTheDocument();
-      expect(screen.getByText(/You can change this in your profile settings/)).toBeInTheDocument();
-    });
-
-    it('does not show username input when user has existing username', () => {
-      mockHookReturn.forumUsername = 'existinguser';
-
-      renderOAuthConsent();
-
-      expect(screen.queryByPlaceholderText('Choose a username for the forum')).not.toBeInTheDocument();
-    });
-
-    it('enables Authorize button when user has existing username', () => {
-      mockHookReturn.forumUsername = 'existinguser';
-
-      renderOAuthConsent();
-
-      const authorizeButton = screen.getByRole('button', { name: /authorize/i });
-      expect(authorizeButton).not.toBeDisabled();
-    });
-
-    it('passes existing username to handleApprove when user has one', async () => {
-      const user = userEvent.setup();
-      mockHookReturn.forumUsername = 'existinguser';
-
-      renderOAuthConsent();
-
-      await user.click(screen.getByRole('button', { name: /authorize/i }));
-
-      expect(mockHookReturn.handleApprove).toHaveBeenCalledWith('existinguser', true);
-    });
-  });
-
   describe('Processing State', () => {
-    it('disables Authorize button when isProcessing is true', () => {
-      mockHookReturn.forumUsername = 'testuser';
-      mockHookReturn.isProcessing = true;
+    it('disables Continue button when isProcessing is true', async () => {
+      const user = userEvent.setup();
+      mockHookReturn.isProcessing = false;
 
       renderOAuthConsent();
 
-      expect(screen.getByRole('button', { name: /processing/i })).toBeDisabled();
+      // Enter username first
+      const input = screen.getByPlaceholderText('Choose a username');
+      await user.type(input, 'testuser');
+
+      // Now set processing
+      mockHookReturn.isProcessing = true;
+
+      // Re-render to pick up change
+      renderOAuthConsent();
+
+      expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
     });
 
-    it('disables Deny button when isProcessing is true', () => {
-      mockHookReturn.forumUsername = 'testuser';
+    it('disables Cancel button when isProcessing is true', () => {
       mockHookReturn.isProcessing = true;
 
       renderOAuthConsent();
 
-      expect(screen.getByRole('button', { name: /deny/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
     });
 
-    it('shows Processing... text on Authorize button during processing', () => {
-      mockHookReturn.forumUsername = 'testuser';
+    it('shows Saving... text on Continue button during processing', () => {
       mockHookReturn.isProcessing = true;
 
       renderOAuthConsent();
 
-      expect(screen.getByText('Processing...')).toBeInTheDocument();
+      expect(screen.getByText('Saving...')).toBeInTheDocument();
     });
 
     it('disables username input when isProcessing is true', () => {
@@ -292,17 +212,8 @@ describe('OAuthConsent', () => {
 
       renderOAuthConsent();
 
-      const input = screen.getByPlaceholderText('Choose a username for the forum');
+      const input = screen.getByPlaceholderText('Choose a username');
       expect(input).toBeDisabled();
-    });
-
-    it('disables remember checkbox when isProcessing is true', () => {
-      mockHookReturn.isProcessing = true;
-
-      renderOAuthConsent();
-
-      const checkbox = screen.getByRole('checkbox');
-      expect(checkbox).toBeDisabled();
     });
   });
 
@@ -313,25 +224,6 @@ describe('OAuthConsent', () => {
       const { container } = renderOAuthConsent();
 
       expect(container.firstChild).toBeNull();
-    });
-  });
-
-  describe('Required Username Indicator', () => {
-    it('shows required indicator (*) when user needs to set forum username', () => {
-      mockHookReturn.forumUsername = null;
-
-      renderOAuthConsent();
-
-      // The label should have a required indicator
-      expect(screen.getByText('*')).toBeInTheDocument();
-    });
-
-    it('does not show required indicator when user has forum username', () => {
-      mockHookReturn.forumUsername = 'existinguser';
-
-      renderOAuthConsent();
-
-      expect(screen.queryByText('*')).not.toBeInTheDocument();
     });
   });
 });
