@@ -242,7 +242,7 @@ export function DashboardSidebar({
           const showExpanded = isMobile || !isCollapsed;
           const communityLink = (
             <a
-              href="https://forum.openhamprep.com/"
+              href="https://forum.openhamprep.com/auth/oidc"
               target="_blank"
               rel="noopener noreferrer"
               data-tour="forum"
