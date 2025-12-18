@@ -53,6 +53,14 @@ describe('PWA Configuration', () => {
         expect(icon.type).toBe('image/png');
       });
     });
+
+    it('should not lock orientation (allow any)', () => {
+      expect(manifest.orientation).toBe('any');
+    });
+
+    it('should have scope set to root', () => {
+      expect(manifest.scope).toBe('/');
+    });
   });
 
   describe('index.html PWA meta tags', () => {
@@ -124,6 +132,50 @@ describe('PWA Configuration', () => {
     it('should have apple-touch-icon', () => {
       const iconPath = resolve(__dirname, '../../public/apple-touch-icon.png');
       expect(() => readFileSync(iconPath)).not.toThrow();
+    });
+  });
+
+  describe('Service Worker', () => {
+    const swPath = resolve(__dirname, '../../public/sw.js');
+    const swContent = readFileSync(swPath, 'utf-8');
+
+    it('should exist in public directory', () => {
+      expect(() => readFileSync(swPath)).not.toThrow();
+    });
+
+    it('should have install event listener', () => {
+      expect(swContent).toContain("addEventListener('install'");
+    });
+
+    it('should have fetch event listener', () => {
+      expect(swContent).toContain("addEventListener('fetch'");
+    });
+
+    it('should have activate event listener for cache cleanup', () => {
+      expect(swContent).toContain("addEventListener('activate'");
+    });
+
+    it('should cache static assets', () => {
+      expect(swContent).toContain('caches.open');
+      expect(swContent).toContain('/manifest.json');
+    });
+
+    it('should skip API requests from caching', () => {
+      expect(swContent).toContain('supabase');
+    });
+  });
+
+  describe('Service Worker Registration', () => {
+    const mainPath = resolve(__dirname, '../main.tsx');
+    const mainContent = readFileSync(mainPath, 'utf-8');
+
+    it('should register service worker in main.tsx', () => {
+      expect(mainContent).toContain('serviceWorker');
+      expect(mainContent).toContain("register('/sw.js')");
+    });
+
+    it('should check for service worker support before registering', () => {
+      expect(mainContent).toContain("'serviceWorker' in navigator");
     });
   });
 });
