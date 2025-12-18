@@ -802,4 +802,102 @@ describe('WeakQuestionsReview', () => {
       Math.random = originalRandom;
     });
   });
+
+  describe('Edge Cases', () => {
+    it('returns to list view when clearing the only remaining question', async () => {
+      const user = userEvent.setup();
+
+      // Use only one question
+      render(<WeakQuestionsReview {...defaultProps} weakQuestionIds={['T1A01']} />, { wrapper: createWrapper() });
+
+      // Click on the only question
+      fireEvent.click(screen.getByText('What is amateur radio?'));
+
+      // Answer correctly 3 times to clear it
+      for (let i = 0; i < 3; i++) {
+        await waitFor(() => {
+          expect(screen.getByTestId('select-a')).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByTestId('select-a'));
+
+        if (i < 2) {
+          // Go back to list and re-select to reset answer state
+          await waitFor(() => {
+            expect(screen.getByTestId('show-result')).toHaveTextContent('true');
+          });
+          fireEvent.click(screen.getByRole('button', { name: /back to weak questions/i }));
+          await waitFor(() => {
+            expect(screen.getByText('What is amateur radio?')).toBeInTheDocument();
+          });
+          fireEvent.click(screen.getByText('What is amateur radio?'));
+        }
+      }
+
+      // After clearing the only question, should show all cleared message
+      await waitFor(() => {
+        expect(screen.getByText('All weak questions cleared!')).toBeInTheDocument();
+        expect(screen.getByText('You cleared 1 question this session!')).toBeInTheDocument();
+      });
+    });
+
+    it('handles failed saveRandomAttempt gracefully', async () => {
+      const user = userEvent.setup();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Mock saveRandomAttempt to fail
+      mockSaveRandomAttempt.mockRejectedValueOnce(new Error('Network error'));
+
+      render(<WeakQuestionsReview {...defaultProps} />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByText('What is amateur radio?'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('select-a')).toBeInTheDocument();
+      });
+
+      // Answer the question - should not throw even though save fails
+      await user.click(screen.getByTestId('select-a'));
+
+      await waitFor(() => {
+        // UI should still update despite save failure
+        expect(screen.getByTestId('show-result')).toHaveTextContent('true');
+      });
+
+      // Error should be logged
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to save attempt:', expect.any(Error));
+
+      consoleSpy.mockRestore();
+    });
+
+    it('prevents answering the same question twice without navigation', async () => {
+      const user = userEvent.setup();
+
+      render(<WeakQuestionsReview {...defaultProps} />, { wrapper: createWrapper() });
+
+      fireEvent.click(screen.getByText('What is amateur radio?'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('select-a')).toBeInTheDocument();
+      });
+
+      // Answer the question
+      await user.click(screen.getByTestId('select-a'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('show-result')).toHaveTextContent('true');
+      });
+
+      // Clear the mock to track new calls
+      mockSaveRandomAttempt.mockClear();
+
+      // Try to answer again - should be blocked
+      await user.click(screen.getByTestId('select-b'));
+
+      // Should not have saved another attempt
+      expect(mockSaveRandomAttempt).not.toHaveBeenCalled();
+      // Selected answer should still be A
+      expect(screen.getByTestId('selected-answer')).toHaveTextContent('A');
+    });
+  });
 });

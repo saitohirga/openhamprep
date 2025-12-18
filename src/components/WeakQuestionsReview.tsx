@@ -81,11 +81,14 @@ export function WeakQuestionsReview({
 
   const handleRandomize = () => {
     if (activeWeakQuestions.length <= 1) return;
-    // Pick a random index different from current
+    // Pick a random index different from current with max iteration guard
     let newIndex: number;
+    let attempts = 0;
+    const maxAttempts = 10;
     do {
       newIndex = Math.floor(Math.random() * activeWeakQuestions.length);
-    } while (newIndex === currentIndex && activeWeakQuestions.length > 1);
+      attempts++;
+    } while (newIndex === currentIndex && attempts < maxAttempts);
     setCurrentIndex(newIndex);
     setSelectedAnswer(null);
     setShowResult(false);
@@ -107,38 +110,52 @@ export function WeakQuestionsReview({
     const isCorrect = answer === currentQuestion.correctAnswer;
     const questionId = currentQuestion.id;
 
-    // Update streak for this question
+    // Update streak for this question using functional updates to avoid stale closures
     if (isCorrect) {
-      const newStreak = (streaks[questionId] || 0) + 1;
-      if (newStreak >= STREAK_TO_CLEAR) {
-        // Question cleared! Calculate new list length accounting for removal
-        const newClearedSet = new Set([...clearedQuestions, questionId]);
-        const remainingCount = weakQuestions.filter(q => !newClearedSet.has(q.id)).length;
+      setStreaks(prevStreaks => {
+        const newStreak = (prevStreaks[questionId] || 0) + 1;
+        if (newStreak >= STREAK_TO_CLEAR) {
+          // Question cleared! Update cleared questions set
+          setClearedQuestions(prevCleared => {
+            const newClearedSet = new Set([...prevCleared, questionId]);
+            const remainingCount = weakQuestions.filter(q => !newClearedSet.has(q.id)).length;
 
-        setClearedQuestions(newClearedSet);
-        // Adjust current index based on new list length
-        setCurrentIndex(prevIndex => {
-          if (prevIndex === null) return null;
-          // If current index would be out of bounds, move to last valid index
-          if (prevIndex >= remainingCount) {
-            return Math.max(0, remainingCount - 1);
-          }
-          return prevIndex;
-        });
-      } else {
-        setStreaks(prev => ({ ...prev, [questionId]: newStreak }));
-      }
+            // Adjust current index based on new list length
+            setCurrentIndex(prevIndex => {
+              if (prevIndex === null) return null;
+              // If no questions remain, return to list view
+              if (remainingCount === 0) return null;
+              // If current index would be out of bounds, move to last valid index
+              if (prevIndex >= remainingCount) {
+                return remainingCount - 1;
+              }
+              return prevIndex;
+            });
+
+            return newClearedSet;
+          });
+          // Don't include the cleared question in streaks
+          return prevStreaks;
+        }
+        return { ...prevStreaks, [questionId]: newStreak };
+      });
     } else {
       // Wrong answer - reset streak
       setStreaks(prev => ({ ...prev, [questionId]: 0 }));
     }
 
-    await saveRandomAttempt(currentQuestion, answer, 'weak_questions');
-    // Invalidate cache so weak questions list updates
-    if (user) {
-      queryClient.invalidateQueries({ queryKey: ['question-attempts', user.id] });
+    // Save attempt with error handling
+    try {
+      await saveRandomAttempt(currentQuestion, answer, 'weak_questions');
+      // Invalidate cache so weak questions list updates
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ['question-attempts', user.id] });
+      }
+    } catch (error) {
+      console.error('Failed to save attempt:', error);
+      // Continue without blocking - the user can still use the app
     }
-  }, [showResult, currentQuestion, saveRandomAttempt, queryClient, user, streaks, clearedQuestions, weakQuestions]);
+  }, [showResult, currentQuestion, saveRandomAttempt, queryClient, user, weakQuestions]);
 
   // Keyboard shortcuts - must be called before any early returns
   const shortcuts: KeyboardShortcut[] = [

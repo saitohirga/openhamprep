@@ -60,11 +60,14 @@ export function BookmarkedQuestions({
 
   const handleRandomize = () => {
     if (bookmarkedQuestions.length <= 1) return;
-    // Pick a random index different from current
+    // Pick a random index different from current with max iteration guard
     let newIndex: number;
+    let attempts = 0;
+    const maxAttempts = 10;
     do {
       newIndex = Math.floor(Math.random() * bookmarkedQuestions.length);
-    } while (newIndex === currentIndex && bookmarkedQuestions.length > 1);
+      attempts++;
+    } while (newIndex === currentIndex && attempts < maxAttempts);
     setCurrentIndex(newIndex);
     setSelectedAnswer(null);
     setShowResult(false);
