@@ -53,6 +53,14 @@ describe('PWA Configuration', () => {
         expect(icon.type).toBe('image/png');
       });
     });
+
+    it('should not lock orientation (allow any)', () => {
+      expect(manifest.orientation).toBe('any');
+    });
+
+    it('should have scope set to root', () => {
+      expect(manifest.scope).toBe('/');
+    });
   });
 
   describe('index.html PWA meta tags', () => {
@@ -124,6 +132,124 @@ describe('PWA Configuration', () => {
     it('should have apple-touch-icon', () => {
       const iconPath = resolve(__dirname, '../../public/apple-touch-icon.png');
       expect(() => readFileSync(iconPath)).not.toThrow();
+    });
+  });
+
+  describe('Service Worker', () => {
+    const swPath = resolve(__dirname, '../../public/sw.js');
+    const swContent = readFileSync(swPath, 'utf-8');
+
+    it('should exist in public directory', () => {
+      expect(() => readFileSync(swPath)).not.toThrow();
+    });
+
+    it('should have install event listener', () => {
+      expect(swContent).toContain("addEventListener('install'");
+    });
+
+    it('should have fetch event listener', () => {
+      expect(swContent).toContain("addEventListener('fetch'");
+    });
+
+    it('should have activate event listener for cache cleanup', () => {
+      expect(swContent).toContain("addEventListener('activate'");
+    });
+
+    it('should cache static assets', () => {
+      expect(swContent).toContain('caches.open');
+      expect(swContent).toContain('/manifest.json');
+    });
+
+    it('should skip API requests from caching', () => {
+      expect(swContent).toContain('API_PATTERNS');
+      expect(swContent).toContain('shouldSkipCaching');
+      expect(swContent).toContain('supabase');
+    });
+
+    it('should pre-cache 384px icon', () => {
+      expect(swContent).toContain('/icons/icon-384.png');
+    });
+
+    it('should have message listener for SKIP_WAITING', () => {
+      expect(swContent).toContain("addEventListener('message'");
+      expect(swContent).toContain('SKIP_WAITING');
+      expect(swContent).toContain('self.skipWaiting()');
+    });
+
+    it('should have error handling in install event', () => {
+      expect(swContent).toContain('.catch((error)');
+      expect(swContent).toContain('console.error');
+      expect(swContent).toContain('Service worker install failed');
+    });
+
+    it('should have cache size limit', () => {
+      expect(swContent).toContain('MAX_CACHE_SIZE');
+      expect(swContent).toContain('keys.length > MAX_CACHE_SIZE');
+    });
+
+    it('should await cache eviction with proper error handling', () => {
+      expect(swContent).toContain('Promise.all(deletePromises)');
+      expect(swContent).toContain('Cache eviction failed');
+      expect(swContent).toContain('Cache size check failed');
+    });
+
+    it('should use precise Supabase domain patterns', () => {
+      expect(swContent).toContain('.supabase.co');
+      expect(swContent).toContain('.supabase.in');
+      // Should not contain broad 'supabase' string match
+      expect(swContent).not.toMatch(/API_PATTERNS.*'supabase'[^.]/);
+    });
+
+    it('should only cache basic response types', () => {
+      expect(swContent).toContain("response.type === 'basic'");
+    });
+  });
+
+  describe('Service Worker Registration', () => {
+    const mainPath = resolve(__dirname, '../main.tsx');
+    const mainContent = readFileSync(mainPath, 'utf-8');
+
+    it('should register service worker in main.tsx', () => {
+      expect(mainContent).toContain('serviceWorker');
+      expect(mainContent).toContain("register('/sw.js')");
+    });
+
+    it('should check for service worker support before registering', () => {
+      expect(mainContent).toContain("'serviceWorker' in navigator");
+    });
+
+    it('should listen for service worker updates', () => {
+      expect(mainContent).toContain('updatefound');
+    });
+
+    it('should periodically check for updates', () => {
+      expect(mainContent).toContain('registration.update()');
+    });
+
+    it('should show non-blocking toast for updates', () => {
+      expect(mainContent).toContain("toast('Update Available'");
+      expect(mainContent).toContain('duration: Infinity');
+    });
+
+    it('should send SKIP_WAITING message on user confirmation', () => {
+      expect(mainContent).toContain("postMessage({ type: 'SKIP_WAITING' })");
+    });
+
+    it('should reload page after user confirms update', () => {
+      expect(mainContent).toContain('window.location.reload()');
+    });
+
+    it('should store interval ID for cleanup', () => {
+      expect(mainContent).toContain('updateIntervalId');
+      expect(mainContent).toContain('clearInterval(updateIntervalId)');
+    });
+
+    it('should clear interval when service worker becomes redundant', () => {
+      expect(mainContent).toContain("state === 'redundant'");
+    });
+
+    it('should import toast from sonner', () => {
+      expect(mainContent).toContain("import { toast } from \"sonner\"");
     });
   });
 });

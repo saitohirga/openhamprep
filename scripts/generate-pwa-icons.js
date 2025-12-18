@@ -60,6 +60,18 @@ const createAppleTouchIconSvg = (size) => {
 </svg>`;
 };
 
+// Helper to generate a single icon with specific error handling
+async function generateIcon(filename, svg, outputDir) {
+  try {
+    const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    await writeFile(join(outputDir, filename), pngBuffer);
+    console.log(`Generated ${filename}`);
+  } catch (error) {
+    console.error(`Failed to generate ${filename}:`, error.message);
+    throw error;
+  }
+}
+
 async function generateIcons() {
   try {
     await mkdir(iconsDir, { recursive: true });
@@ -67,37 +79,22 @@ async function generateIcons() {
     // Generate regular icons
     for (const size of ICON_SIZES) {
       const svg = createIconSvg(size);
-      const pngBuffer = await sharp(Buffer.from(svg))
-        .png()
-        .toBuffer();
-
-      await writeFile(join(iconsDir, `icon-${size}.png`), pngBuffer);
-      console.log(`Generated icon-${size}.png`);
+      await generateIcon(`icon-${size}.png`, svg, iconsDir);
     }
 
     // Generate maskable icons
     for (const size of ICON_SIZES) {
       const svg = createMaskableIconSvg(size);
-      const pngBuffer = await sharp(Buffer.from(svg))
-        .png()
-        .toBuffer();
-
-      await writeFile(join(iconsDir, `icon-maskable-${size}.png`), pngBuffer);
-      console.log(`Generated icon-maskable-${size}.png`);
+      await generateIcon(`icon-maskable-${size}.png`, svg, iconsDir);
     }
 
     // Generate Apple touch icon (180x180)
     const appleTouchSvg = createAppleTouchIconSvg(180);
-    const appleTouchBuffer = await sharp(Buffer.from(appleTouchSvg))
-      .png()
-      .toBuffer();
-
-    await writeFile(join(publicDir, 'apple-touch-icon.png'), appleTouchBuffer);
-    console.log('Generated apple-touch-icon.png');
+    await generateIcon('apple-touch-icon.png', appleTouchSvg, publicDir);
 
     console.log('\nAll PWA icons generated successfully!');
   } catch (error) {
-    console.error('Failed to generate PWA icons:', error);
+    console.error('Failed to generate PWA icons:', error.message);
     process.exit(1);
   }
 }
