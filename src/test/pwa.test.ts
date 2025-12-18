@@ -161,7 +161,13 @@ describe('PWA Configuration', () => {
     });
 
     it('should skip API requests from caching', () => {
+      expect(swContent).toContain('API_PATTERNS');
+      expect(swContent).toContain('shouldSkipCaching');
       expect(swContent).toContain('supabase');
+    });
+
+    it('should pre-cache 384px icon', () => {
+      expect(swContent).toContain('/icons/icon-384.png');
     });
   });
 
@@ -176,6 +182,14 @@ describe('PWA Configuration', () => {
 
     it('should check for service worker support before registering', () => {
       expect(mainContent).toContain("'serviceWorker' in navigator");
+    });
+
+    it('should listen for service worker updates', () => {
+      expect(mainContent).toContain('updatefound');
+    });
+
+    it('should periodically check for updates', () => {
+      expect(mainContent).toContain('registration.update()');
     });
   });
 });
