@@ -24,8 +24,12 @@ if ('serviceWorker' in navigator) {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New version available - user will get it on next page load
-                console.info('New app version available. Refresh to update.');
+                // New version available - prompt user to update
+                // Using confirm() for simplicity; could be replaced with a toast UI
+                if (window.confirm('A new version of Ham Prep is available. Reload to update?')) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                }
               }
             });
           }

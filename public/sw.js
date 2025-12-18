@@ -19,15 +19,29 @@ const STATIC_ASSETS = [
 const API_PATTERNS = ['/rest/', '/auth/', 'supabase'];
 const shouldSkipCaching = (url) => API_PATTERNS.some(pattern => url.includes(pattern));
 
+// Maximum number of dynamic cache entries to prevent unbounded growth
+const MAX_CACHE_SIZE = 50;
+
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .catch((error) => {
+        console.error('Service worker install failed:', error);
+        // Don't throw - allow SW to install even if some assets fail
+        // This prevents a single 404 from breaking the entire PWA
+      })
   );
-  // Activate immediately without waiting for existing tabs to close
-  self.skipWaiting();
+  // Note: We intentionally do NOT call skipWaiting() here.
+  // Updates are triggered by user confirmation via postMessage.
+});
+
+// Listen for skip waiting message from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate event - clean up old caches
@@ -70,9 +84,19 @@ self.addEventListener('fetch', (event) => {
 
         // Cache successful responses asynchronously (fire-and-forget for performance)
         // Don't await - caching shouldn't block the response to the user
-        if (response.status === 200) {
+        if (response.status === 200 && response.type === 'basic') {
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
+            // Enforce cache size limit to prevent unbounded storage growth
+            cache.keys().then((keys) => {
+              if (keys.length > MAX_CACHE_SIZE) {
+                // Remove oldest entries (FIFO) until under limit
+                const deleteCount = keys.length - MAX_CACHE_SIZE;
+                for (let i = 0; i < deleteCount; i++) {
+                  cache.delete(keys[i]);
+                }
+              }
+            });
           });
         }
 

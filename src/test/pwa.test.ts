@@ -169,6 +169,27 @@ describe('PWA Configuration', () => {
     it('should pre-cache 384px icon', () => {
       expect(swContent).toContain('/icons/icon-384.png');
     });
+
+    it('should have message listener for SKIP_WAITING', () => {
+      expect(swContent).toContain("addEventListener('message'");
+      expect(swContent).toContain('SKIP_WAITING');
+      expect(swContent).toContain('self.skipWaiting()');
+    });
+
+    it('should have error handling in install event', () => {
+      expect(swContent).toContain('.catch((error)');
+      expect(swContent).toContain('console.error');
+      expect(swContent).toContain('Service worker install failed');
+    });
+
+    it('should have cache size limit', () => {
+      expect(swContent).toContain('MAX_CACHE_SIZE');
+      expect(swContent).toContain('keys.length > MAX_CACHE_SIZE');
+    });
+
+    it('should only cache basic response types', () => {
+      expect(swContent).toContain("response.type === 'basic'");
+    });
   });
 
   describe('Service Worker Registration', () => {
@@ -190,6 +211,19 @@ describe('PWA Configuration', () => {
 
     it('should periodically check for updates', () => {
       expect(mainContent).toContain('registration.update()');
+    });
+
+    it('should prompt user before applying update', () => {
+      expect(mainContent).toContain('window.confirm');
+      expect(mainContent).toContain('new version');
+    });
+
+    it('should send SKIP_WAITING message on user confirmation', () => {
+      expect(mainContent).toContain("postMessage({ type: 'SKIP_WAITING' })");
+    });
+
+    it('should reload page after user confirms update', () => {
+      expect(mainContent).toContain('window.location.reload()');
     });
   });
 });
